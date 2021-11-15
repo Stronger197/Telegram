@@ -116,6 +116,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
@@ -211,6 +212,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         default boolean hasForwardingMessages() {
             return false;
         }
+
+        default void onSendMessageIconClick() {
+
+        }
+
+        default void chatSetted(TLRPC.ChatFull chatFull) {
+
+        }
     }
 
     private final static int RECORD_STATE_ENTER = 0;
@@ -225,6 +234,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
 
     private SeekBarWaveform seekBarWaveform;
+    public SendMessageAsView sendMessageAsView;
     private boolean isInitLineCount;
     private int lineCount = 1;
     private AdjustPanLayoutHelper adjustPanLayoutHelper;
@@ -323,6 +333,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private Drawable sendButtonInverseDrawable;
     private ActionBarPopupWindow sendPopupWindow;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout sendPopupLayout;
+    private FrameLayout inputTextFrameLayout;
     private ImageView cancelBotButton;
     private ImageView[] emojiButton = new ImageView[2];
     @SuppressWarnings("FieldCanBeLocal")
@@ -1690,7 +1701,22 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         textFieldContainer.setPadding(0, AndroidUtilities.dp(1), 0, 0);
         addView(textFieldContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 1, 0, 0));
 
-        FrameLayout frameLayout = new FrameLayout(context) {
+
+        sendMessageAsView = new SendMessageAsView(context);
+        sendMessageAsView.setPadding(0, 0, 0, 0);
+        sendMessageAsView.setSize(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
+        sendMessageAsView.setRoundRadius(AndroidUtilities.dp(15));
+        sendMessageAsView.setContentDescription(LocaleController.getString("AccDescrVoiceMessage", R.string.AccDescrVoiceMessage));
+        sendMessageAsView.setFocusable(true);
+        sendMessageAsView.setOnClickListener(v -> {
+            delegate.onSendMessageIconClick();
+            sendMessageAsView.startDeleteAnimation();
+        });
+        sendMessageAsView.setVisibility(View.GONE);
+        sendMessageAsView.setAccessibilityDelegate(mediaMessageButtonsDelegate);
+        textFieldContainer.addView(sendMessageAsView, LayoutHelper.createFrameRelatively(48, 48, Gravity.LEFT, AndroidUtilities.dp(1), 0, 0, 0));
+
+        inputTextFrameLayout = new FrameLayout(context) {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
@@ -1723,8 +1749,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 return super.drawChild(canvas, child, drawingTime);
             }
         };
-        frameLayout.setClipChildren(false);
-        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 48, 0));
+        inputTextFrameLayout.setClipChildren(false);
+        textFieldContainer.addView(inputTextFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 48, 0));
 
         for (int a = 0; a < 2; a++) {
             emojiButton[a] = new ImageView(context) {
@@ -1743,7 +1769,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             if (Build.VERSION.SDK_INT >= 21) {
                 emojiButton[a].setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             }
-            frameLayout.addView(emojiButton[a], LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 3, 0, 0, 0));
+            inputTextFrameLayout.addView(emojiButton[a], LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 3, 0, 0, 0));
             emojiButton[a].setOnClickListener(view -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
                     return;
@@ -2023,7 +2049,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         messageEditText.setHintColor(getThemedColor(Theme.key_chat_messagePanelHint));
         messageEditText.setHintTextColor(getThemedColor(Theme.key_chat_messagePanelHint));
         messageEditText.setCursorColor(getThemedColor(Theme.key_chat_messagePanelCursor));
-        frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 52, 0, isChat ? 50 : 2, 0));
+        inputTextFrameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 52, 0, isChat ? 50 : 2, 0));
         messageEditText.setOnKeyListener(new OnKeyListener() {
 
             boolean ctrlPressed = false;
@@ -2234,7 +2260,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (Build.VERSION.SDK_INT >= 21) {
                     scheduledButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
                 }
-                frameLayout.addView(scheduledButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.RIGHT));
+                inputTextFrameLayout.addView(scheduledButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.RIGHT));
                 scheduledButton.setOnClickListener(v -> {
                     if (delegate != null) {
                         delegate.openScheduledMessages();
@@ -2247,7 +2273,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             attachLayout.setEnabled(false);
             attachLayout.setPivotX(AndroidUtilities.dp(48));
             attachLayout.setClipChildren(false);
-            frameLayout.addView(attachLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.BOTTOM | Gravity.RIGHT));
+            inputTextFrameLayout.addView(attachLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.BOTTOM | Gravity.RIGHT));
 
 
             botCommandsMenuButton = new BotCommandsMenuView(getContext());
@@ -2260,7 +2286,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     botCommandsMenuContainer.dismiss();
                 }
             });
-            frameLayout.addView(botCommandsMenuButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.BOTTOM | Gravity.LEFT, 10, 8, 10, 8));
+            inputTextFrameLayout.addView(botCommandsMenuButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.BOTTOM | Gravity.LEFT, 10, 8, 10, 8));
             AndroidUtilities.updateViewVisibilityAnimated(botCommandsMenuButton, false, 1f, false);
             botCommandsMenuButton.setExpanded(true, false);
 
@@ -2417,7 +2443,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         recordedAudioPanel.setFocusable(true);
         recordedAudioPanel.setFocusableInTouchMode(true);
         recordedAudioPanel.setClickable(true);
-        frameLayout.addView(recordedAudioPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
+        inputTextFrameLayout.addView(recordedAudioPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
 
         recordDeleteImageView = new RLottieImageView(context);
         recordDeleteImageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -2529,7 +2555,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         recordPanel = new FrameLayout(context);
         recordPanel.setClipChildren(false);
         recordPanel.setVisibility(GONE);
-        frameLayout.addView(recordPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
+        inputTextFrameLayout.addView(recordPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
         recordPanel.setOnTouchListener((v, event) -> true);
 
         slideText = new SlideTextView(context);
@@ -3344,6 +3370,17 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         setAllowStickersAndGifs(value, value2, false);
     }
 
+    public void setChatSendAs(TLObject chat) {
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setSmallSize(false);
+        avatarDrawable.setInfo(chat);
+        sendMessageAsView.setForUserOrChat(chat, avatarDrawable);
+    }
+
+    public void cancelChatSendAsAnimation() {
+        sendMessageAsView.cancelDeleteAnimation();
+    }
+
     public void setAllowStickersAndGifs(boolean value, boolean value2, boolean waitingForKeyboardOpen) {
         if ((allowStickers != value || allowGifs != value2) && emojiView != null) {
             if (!SharedConfig.smoothKeyboard) {
@@ -3785,10 +3822,47 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void setChatInfo(TLRPC.ChatFull chatInfo) {
         info = chatInfo;
+
+        if(chatInfo != null) {
+            delegate.chatSetted(chatInfo);
+        }
         if (emojiView != null) {
             emojiView.setChatInfo(info);
         }
+
         setSlowModeTimer(chatInfo.slowmode_next_send_date);
+
+        TLRPC.Chat currentChat = null;
+        TLRPC.User currentUser = null;
+        if(info.default_send_as instanceof TLRPC.TL_peerChannel) {
+            currentChat = accountInstance.getMessagesController().getChat(info.default_send_as.channel_id);
+            chatInfo.default_send_as = accountInstance.getMessagesController().getPeer(info.default_send_as.channel_id);
+        } else if(info.default_send_as instanceof TLRPC.TL_peerChat) {
+            currentChat = accountInstance.getMessagesController().getChat(info.default_send_as.chat_id);
+            chatInfo.default_send_as = accountInstance.getMessagesController().getPeer(info.default_send_as.chat_id);
+        } else if(info.default_send_as instanceof TLRPC.TL_peerUser) {
+            currentUser = accountInstance.getMessagesController().getUser(info.default_send_as.user_id);
+            chatInfo.default_send_as = accountInstance.getMessagesController().getPeer(info.default_send_as.user_id);
+        } else {
+            inputTextFrameLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 48, 0));
+            sendMessageAsView.setVisibility(View.GONE);
+            return;
+        }
+
+        if(currentChat == null && currentUser == null) {
+            return;
+        }
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        if(currentChat != null) {
+            avatarDrawable.setInfo(currentChat);
+        } else {
+            avatarDrawable.setInfo(currentUser);
+        }
+        avatarDrawable.setSmallSize(false);
+
+        sendMessageAsView.setForUserOrChat(currentChat, avatarDrawable);
+        inputTextFrameLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 40, 0, 48, 0));
+        sendMessageAsView.setVisibility(View.VISIBLE);
     }
 
     public void checkRoundVideo() {
@@ -5932,6 +6006,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         return attachButton;
     }
 
+    public View getSendAsButton() {
+        return sendMessageAsView;
+    }
+
     public View getSendButton() {
         return sendButton.getVisibility() == VISIBLE ? sendButton : audioVideoButtonContainer;
     }
@@ -7410,6 +7488,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public int getVisibleEmojiPadding() {
         return emojiViewVisible ? emojiPadding : 0;
+    }
+
+    public boolean getEmojiViewVisibleForce() {
+        return emojiViewVisible;
     }
 
     private MessageObject getThreadMessage() {

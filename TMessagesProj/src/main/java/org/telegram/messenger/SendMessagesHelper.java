@@ -166,7 +166,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 uploadSet.remove(path);
             }
         }
-        
+
         private void addUploadProgress(String path, long sz, float progress) {
             uploadProgresses.put(path, progress);
             uploadSize.put(path, sz);
@@ -2093,7 +2093,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             getMessagesStorage().markMessageAsSendError(newMsgObj1, scheduleDate != 0);
                             AndroidUtilities.runOnUIThread(() -> {
                                 newMsgObj1.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
-                                getNotificationCenter().postNotificationName(NotificationCenter.messageSendError, newMsgObj1.id);
+                                getNotificationCenter().postNotificationName(NotificationCenter.messageSendError, newMsgObj1.id, error.code == 400 && error.text.equals("CHAT_FORWARDS_RESTRICTED"));
                                 processSentMessage(newMsgObj1.id);
                                 removeFromSendingMessages(newMsgObj1.id, scheduleDate != 0);
                             });
@@ -3127,6 +3127,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
             }
             anonymously = ChatObject.shouldSendAnonymously(chat);
+            TLRPC.ChatFull fullchat = MessagesController.getInstance(currentAccount).getChatFull(sendToPeer.channel_id);
+            if(fullchat.default_send_as != null && MessagesController.getInstance(currentAccount).getUser(fullchat.default_send_as.user_id) == null) {
+                anonymously = true;
+            }
         }
 
         try {
@@ -3427,7 +3431,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     newMsg.from_id = new TLRPC.TL_peerChannel();
                     newMsg.from_id.channel_id = sendToPeer.channel_id;
                 } else if (anonymously) {
-                    newMsg.from_id = getMessagesController().getPeer(peer);
+                    TLRPC.ChatFull fullchat = MessagesController.getInstance(currentAccount).getChatFull(sendToPeer.channel_id);
+                    newMsg.from_id = MessagesController.getInstance(currentAccount).getPeer(-fullchat.default_send_as.user_id);
                     if (rank != null) {
                         newMsg.post_author = rank;
                         newMsg.flags |= 65536;
@@ -3637,6 +3642,26 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     reqSend.silent = newMsg.silent;
                     reqSend.peer = sendToPeer;
                     reqSend.random_id = newMsg.random_id;
+                    if(sendToPeer.channel_id != 0) {
+                        TLRPC.ChatFull fullchat = MessagesController.getInstance(currentAccount).getChatFull(sendToPeer.channel_id);
+                        if (fullchat.default_send_as != null) {
+                            TLRPC.Peer peer1 = fullchat.default_send_as;
+                            if(peer1 instanceof TLRPC.TL_peerUser) {
+                                if(retryMessageObject != null) {
+                                    reqSend.send_as = MessagesController.getInstance(currentAccount).getInputPeer(retryMessageObject.messageOwner.from_id);
+                                } else if(MessagesController.getInstance(currentAccount).getUser(fullchat.default_send_as.user_id) != null) {
+                                    reqSend.send_as = MessagesController.getInstance(currentAccount).getInputPeer(fullchat.default_send_as.user_id);
+                                } else {
+                                    reqSend.send_as = MessagesController.getInstance(currentAccount).getInputPeer(-fullchat.default_send_as.user_id);
+                                }
+                            } else if(peer1 instanceof TLRPC.TL_peerChat) {
+                                reqSend.send_as = MessagesController.getInstance(currentAccount).getInputPeer(fullchat.default_send_as.user_id);
+                            } else if(peer1 instanceof TLRPC.TL_peerChannel) {
+                                reqSend.send_as = MessagesController.getInstance(currentAccount).getInputPeer(fullchat.default_send_as.user_id);
+                            }
+                        }
+                    }
+
                     if (newMsg.reply_to != null && newMsg.reply_to.reply_to_msg_id != 0) {
                         reqSend.flags |= 1;
                         reqSend.reply_to_msg_id = newMsg.reply_to.reply_to_msg_id;

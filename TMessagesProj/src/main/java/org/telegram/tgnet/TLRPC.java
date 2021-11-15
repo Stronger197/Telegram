@@ -44634,6 +44634,8 @@ public class TLRPC {
             stream.writeInt32(constructor);
             flags = just_clear ? (flags | 1) : (flags &~ 1);
             flags = revoke ? (flags | 2) : (flags &~ 2);
+            flags = min_date > 0 ? (flags | 4) : (flags &~ 4);
+            flags = max_date > 0 ? (flags | 8) : (flags &~ 8);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeInt32(max_id);
@@ -44929,6 +44931,9 @@ public class TLRPC {
             flags = silent ? (flags | 32) : (flags &~ 32);
             flags = background ? (flags | 64) : (flags &~ 64);
             flags = clear_draft ? (flags | 128) : (flags &~ 128);
+            if(send_as != null) {
+                flags = flags | 8192; // TODO find a better solution``
+            }
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             if ((flags & 1) != 0) {

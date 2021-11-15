@@ -390,6 +390,8 @@
     <string name="MegaPrivateInfo">Private groups can only be joined if you were invited or have an invite link.</string>
     <string name="ChannelLinkTitle">Permanent link</string>
     <string name="ChannelInviteLinkTitle">Invite Link</string>
+    <string name="ChatSavingContentTitle">Saving Content</string>
+    <string name="ChatSavingContent">Restrict saving content</string>
     <string name="GroupAddMembers">Add Members</string>
     <string name="ChannelAddSubscribers">Add Subscribers</string>
     <string name="LeaveChannel">Leave Channel</string>
@@ -568,6 +570,8 @@
     <string name="UserRestrictionsApplyChanges">Apply Changes?</string>
     <string name="UserRestrictionsApplyChangesText">You have changed this user\'s rights in **%1$s**. Apply changes?</string>
     <string name="UserRestrictionsCustom">Custom</string>
+    <string name="ChatSendAs">Send message as…</string>
+    <string name="ChatSendAsPersonalAccount">personal account</string>
     <string name="ManageGroup">Manage Group</string>
     <string name="ManageChannel">Manage Channel</string>
     <string name="ManageGroupMenu">Manage group</string>
@@ -778,6 +782,8 @@
     <string name="EventLogToggledInvitesOff">un1 disabled group invites</string>
     <string name="EventLogToggledSignaturesOn">un1 enabled signatures</string>
     <string name="EventLogToggledSignaturesOff">un1 disabled signatures</string>
+    <string name="EventLogActionToggleNoForwardsOn">un1 turned off forwarding</string>
+    <string name="EventLogActionToggleNoForwardsOff">un1 turned on forwarding</string>
     <string name="EventLogRestrictedUntil">changed permissions for %1$s\n\nDuration: %2$s</string>
     <string name="EventLogDefaultPermissions">changed default permissions</string>
     <string name="EventLogRestrictedSendStickers">Send stickers &amp; GIFs</string>
@@ -1468,6 +1474,7 @@
     <!--group info view-->
     <string name="GroupMembers">Members</string>
     <string name="SharedMedia">Shared Media</string>
+    <string name="ForwardRestrictedHint">Forwards from this channel are restricted</string>
     <string name="SETTINGS">Settings</string>
     <string name="AddSubscriber">Add subscriber</string>
     <string name="AddMember">Add Member</string>
@@ -1998,6 +2005,7 @@
     <string name="WhenRoaming">When roaming</string>
     <string name="AutoplayGIF">GIFs</string>
     <string name="AutoplayVideo">Videos</string>
+<!--    hint-->
     <string name="AutoplayVideoInfo">Press the volume buttons to turn sound on.</string>
     <string name="HidAccount">The account was hidden by the user</string>
     <string name="AutoplayMedia">Auto-play media</string>
@@ -3305,6 +3313,7 @@
     <string name="AreYouSureClearHistoryGroup">Delete all cached text and media from this group?</string>
     <string name="DeleteMessagesTitle">Delete %1$s</string>
     <string name="DeleteSingleMessagesTitle">Delete message</string>
+    <string name="DeleteSingleMessagesMultiTitle">Delete messages</string>
     <string name="DeleteMessagesTextGroupPart">You can also delete the %1$s from the inboxes of other group members by checking \"Delete for all members\".</string>
     <string name="DeleteMessagesTextGroup">You can also delete the %1$s you sent from the inboxes of other group members by checking \"Unsend my messages\".</string>
     <string name="DeleteMessagesText">You can also delete the %1$s you sent from **%2$s**\'s inbox by checking \"Unsend my messages\".</string>
@@ -3314,6 +3323,7 @@
     <string name="AreYouSureDeleteFewMessagesMega">Are you sure you want to delete these messages for everyone?</string>
     <string name="DeleteMessagesOption">Unsend My Messages</string>
     <string name="DeleteMessagesOptionAlso">Also delete for %1$s</string>
+    <string name="DeleteMessagesFromCalendar">Are you sure you want to delete all messages for the **%1$s**</string>
     <string name="ClearHistoryOptionAlso">Also clear history for %1$s</string>
     <string name="SendMessageTitle">Send message</string>
     <string name="SendMessagesToGroupText">Do you want to send this message to **%1$s**?</string>
@@ -3809,6 +3819,7 @@
     <!--invite links-->
     <string name="ManageInviteLinks">Manage Invite Links</string>
     <string name="ManageLinksInfoHelp">You can create additional invite links that have a limited time or number of uses</string>
+    <string name="RestrictForwardingFromChatInfoHelp">Participants won\'t be able to forward messages from this group or save media files.</string>
     <string name="PrimaryLinkHelp">Anyone on Telegram will be able to join your group by following this link.</string>
     <string name="PrimaryLinkHelpChannel">Anyone on Telegram will be able to join your channel by following this link.</string>
     <string name="EditLink">Edit link</string>
@@ -4072,6 +4083,12 @@
     <string name="Days_few">%1$d days</string>
     <string name="Days_many">%1$d days</string>
     <string name="Days_other">%1$d days</string>
+    <string name="DaysSelected_zero">%1$d selected days</string>
+    <string name="DaysSelected_one">%1$d selected day</string>
+    <string name="DaysSelected_two">%1$d selected days</string>
+    <string name="DaysSelected_few">%1$d selected days</string>
+    <string name="DaysSelected_many">%1$d selected days</string>
+    <string name="DaysSelected_other">%1$d selected days</string>
     <string name="Weeks_zero">%1$d weeks</string>
     <string name="Weeks_one">%1$d week</string>
     <string name="Weeks_two">%1$d weeks</string>
@@ -4745,6 +4762,8 @@
     <string name="ChatThemeDayNightSwitchTooltip">Tap here to view how **%s** will see this theme when using night mode.</string>
     <string name="AttachMenu">Attach...</string>
     <string name="Calendar">Calendar</string>
+    <string name="CalendarSelectDays">SELECT DAYS</string>
+    <string name="CalendarClearHistory">CLEAR HISTORY</string>
     <string name="MediaZoomIn">Zoom in</string>
     <string name="MediaZoomOut">Zoom out</string>
     <string name="MediaShowPhotos">Show photos</string>

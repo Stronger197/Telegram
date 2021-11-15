@@ -3971,6 +3971,76 @@ public class AlertsCreator {
         void didPressedNewCard();
     }
 
+    public interface MessagesAlertCallback {
+        void onDelete(boolean forAll);
+    }
+
+    public static void createDeleteFromCalendarMessagesAlert(BaseFragment fragment, TLRPC.User user, Theme.ResourcesProvider resourcesProvider, int daysCount, MessagesAlertCallback callback) {
+        if (fragment == null || user == null) {
+            return;
+        }
+        Activity activity = fragment.getParentActivity();
+        if (activity == null) {
+            return;
+        }
+        int currentAccount = fragment.getCurrentAccount();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity, resourcesProvider);
+
+        final boolean[] deleteForAll = new boolean[1];
+        boolean canRevokeInbox = user != null && MessagesController.getInstance(currentAccount).canRevokePmInbox;
+        int revokeTimeLimit;
+        if (user != null) {
+            revokeTimeLimit = MessagesController.getInstance(currentAccount).revokeTimePmLimit;
+        } else {
+            revokeTimeLimit = MessagesController.getInstance(currentAccount).revokeTimeLimit;
+        }
+        boolean canDeleteInbox = user != null && canRevokeInbox && revokeTimeLimit == 0x7fffffff;
+        if (user.id != UserConfig.getInstance(currentAccount).getClientUserId()) {
+            FrameLayout frameLayout = new FrameLayout(activity);
+            CheckBoxCell cell = new CheckBoxCell(activity, 1, resourcesProvider);
+            cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            if (canDeleteInbox) {
+                cell.setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", false, false);
+            }
+            cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
+            frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
+            cell.setOnClickListener(v -> {
+                CheckBoxCell cell1 = (CheckBoxCell) v;
+                deleteForAll[0] = !deleteForAll[0];
+                cell1.setChecked(deleteForAll[0], true);
+            });
+            builder.setView(frameLayout);
+            builder.setCustomViewOffset(9);
+        }
+
+        builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+            callback.onDelete(deleteForAll[0]);
+        });
+
+        builder.setTitle(LocaleController.getString("DeleteSingleMessagesMultiTitle", R.string.DeleteSingleMessagesMultiTitle));
+
+        builder.setMessage(
+            AndroidUtilities.replaceTags(
+                LocaleController.formatString(
+                    "DeleteMessagesFromCalendar",
+                    R.string.DeleteMessagesFromCalendar,
+                    LocaleController.formatPluralString(
+                        "DaysSelected", daysCount
+                    )
+                )
+            )
+        );
+
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        fragment.showDialog(dialog);
+        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
+    }
+
     public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, boolean scheduled, int loadParticipant, Runnable onDelete, Theme.ResourcesProvider resourcesProvider) {
         if (fragment == null || user == null && chat == null && encryptedChat == null) {
             return;

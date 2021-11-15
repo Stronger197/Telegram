@@ -2921,6 +2921,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     oldChat.photo = chat.photo;
                     oldChat.broadcast = chat.broadcast;
                     oldChat.verified = chat.verified;
+                    oldChat.noforwards = chat.noforwards;
                     oldChat.megagroup = chat.megagroup;
                     oldChat.call_not_empty = chat.call_not_empty;
                     oldChat.call_active = chat.call_active;
@@ -2997,6 +2998,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 chat.photo = oldChat.photo;
                 chat.broadcast = oldChat.broadcast;
                 chat.verified = oldChat.verified;
+                chat.noforwards = oldChat.noforwards;
                 chat.megagroup = oldChat.megagroup;
 
                 if (oldChat.default_banned_rights != null) {
@@ -4838,7 +4840,11 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void deleteDialog(final long did, int onlyHistory, boolean revoke) {
-        deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0);
+        deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0, 0, 0);
+    }
+
+    public void deleteDialog(final long did, int onlyHistory, boolean revoke, int startDate, int endDate) {
+        deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0, startDate, endDate);
     }
 
     public void setDialogHistoryTTL(long did, int ttl) {
@@ -4886,7 +4892,8 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
-    protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId) {
+    protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId, int minDate, int maxDate) {
+
         if (onlyHistory == 2) {
             getMessagesStorage().deleteDialog(did, onlyHistory);
             return;
@@ -4894,7 +4901,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (first == 1 && max_id == 0) {
             TLRPC.InputPeer peerFinal = peer;
             getMessagesStorage().getDialogMaxMessageId(did, (param) -> {
-                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId);
+                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId, minDate, maxDate);
                 checkIfFolderEmpty(1);
             });
             return;
@@ -4909,7 +4916,16 @@ public class MessagesController extends BaseController implements NotificationCe
                 FileLog.d("delete dialog with id " + did);
             }
             boolean isPromoDialog = false;
-            getMessagesStorage().deleteDialog(did, onlyHistory);
+
+            if(minDate != 0 && maxDate != 0) {
+                ArrayList<Integer> msid = getMessagesStorage().getMessages(did, minDate, maxDate);
+                getMessagesStorage().markMessagesAsDeleted(did, msid, true, true, false);
+                getMessagesStorage().updateDialogsWithDeletedMessages(did, 0, msid, null, true);
+                getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, msid, 0L, false);
+            } else {
+                getMessagesStorage().deleteDialog(did, onlyHistory);
+            }
+
             TLRPC.Dialog dialog = dialogs_dict.get(did);
             if (onlyHistory == 0 || onlyHistory == 3) {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogDeleted, did);
@@ -5004,7 +5020,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
                 } else {
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-                    getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
+                    if(minDate == 0 || maxDate == 0) {
+                        getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
+                    }
                 }
             }
             getMessagesStorage().getStorageQueue().postRunnable(() -> AndroidUtilities.runOnUIThread(() -> getNotificationsController().removeNotificationsForDialog(did)));
@@ -5039,6 +5057,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         data.writeInt32(onlyHistory);
                         data.writeInt32(max_id_delete);
                         data.writeBool(revoke);
+                        data.writeInt32(minDate);
+                        data.writeInt32(maxDate);
                         peer.serializeToStream(data);
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -5074,6 +5094,10 @@ public class MessagesController extends BaseController implements NotificationCe
                 req.max_id = max_id_delete > 0 ? max_id_delete : Integer.MAX_VALUE;
                 req.just_clear = onlyHistory != 0;
                 req.revoke = revoke;
+                if(minDate != 0 && maxDate != 0) {
+                    req.min_date = minDate;
+                    req.max_date = maxDate;
+                }
                 int max_id_delete_final = max_id_delete;
                 TLRPC.InputPeer peerFinal = peer;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -5083,7 +5107,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (error == null) {
                         TLRPC.TL_messages_affectedHistory res = (TLRPC.TL_messages_affectedHistory) response;
                         if (res.offset > 0) {
-                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
+                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0, minDate, maxDate);
                         }
                         processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
                         getMessagesStorage().onDeleteQueryComplete(did);

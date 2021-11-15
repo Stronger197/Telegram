@@ -159,6 +159,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     Rect rect = new Rect();
     ActionBarPopupWindow optionsWindow;
     FlickerLoadingView globalGradientView;
+    private HintView forwardingRestrictedHingView;
     private final int viewType;
 
     public boolean checkPinchToZoom(MotionEvent ev) {
@@ -1063,6 +1064,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private boolean maybeStartTracking;
     private int startedTrackingX;
     private int startedTrackingY;
+    private boolean noForward;
     private VelocityTracker velocityTracker;
 
     private boolean isActionModeShowed;
@@ -1073,6 +1075,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         super(context);
         this.viewType = viewType;
 
+        forwardingRestrictedHingView = null;
         globalGradientView = new FlickerLoadingView(context);
         globalGradientView.setIsSingleCell(true);
 
@@ -1431,7 +1434,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             forwardItem.setDuplicateParentStateEnabled(false);
             actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
             actionModeViews.add(forwardItem);
-            forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
+            forwardItem.setAlpha(noForward ? 0.5f : 1f);
+            forwardItem.setOnClickListener(v -> {
+                if(noForward) {
+                    showNoForwardHint(false);
+                } else {
+                    onActionBarItemClick(forward);
+                }
+            });
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -3981,6 +3991,40 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 sharedMediaData[a].endReached[1] = false;
             }
         }
+    }
+
+    public void setNoForward(boolean noForward) {
+        this.noForward = noForward;
+        updateNoForward();
+    }
+
+    public void updateNoForward() {
+        forwardItem.setAlpha(noForward ? 0.5f : 1f);
+    }
+
+
+    private void showNoForwardHint(boolean hide) {
+
+        if (profileActivity == null || profileActivity.getFragmentView() == null){
+            return;
+        }
+
+
+        if (forwardingRestrictedHingView == null) {
+
+            ViewGroup frameLayout = (ViewGroup) profileActivity.getFragmentView();
+
+            forwardingRestrictedHingView = new HintView(getContext(), 9);
+            forwardingRestrictedHingView.setText(LocaleController.getString("ForwardRestrictedHint", R.string.ForwardRestrictedHint));
+
+            frameLayout.addView(forwardingRestrictedHingView,  LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
+        }
+        if (hide) {
+            forwardingRestrictedHingView.hide();
+            return;
+        }
+
+        forwardingRestrictedHingView.showForView(forwardItem, true);
     }
 
     public void setChatUsers(ArrayList<Integer> sortedUsers, TLRPC.ChatFull chatInfo) {

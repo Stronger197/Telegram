@@ -214,6 +214,15 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
         };
 
+        if(currentChatInfo != null) {
+            TLRPC.Chat chat = getMessagesController().getChat(currentChatInfo.id);
+            if (chat == null) {
+                chat = getMessagesController().getChat(-currentChatInfo.id);
+            }
+            if (chat != null) {
+                sharedMediaLayout.setNoForward(chat.noforwards);
+            }
+        }
         sharedMediaLayout.getSearchItem().setTranslationY(0);
         sharedMediaLayout.photoVideoOptionsItem.setTranslationY(0);
 

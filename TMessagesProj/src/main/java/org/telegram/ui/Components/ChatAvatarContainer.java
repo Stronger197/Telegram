@@ -198,6 +198,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     private void openProfile(boolean byAvatar) {
+        parentFragment.onClikedProfile();
         if (byAvatar && (AndroidUtilities.isTablet() || AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y || !avatarImageView.getImageReceiver().hasNotThumb())) {
             byAvatar = false;
         }

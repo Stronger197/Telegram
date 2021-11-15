@@ -1919,6 +1919,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return ProfileActivity.this.onMemberClick(participant, isLong);
             }
         };
+        if(chatInfo != null) {
+            TLRPC.Chat chat = getMessagesController().getChat(chatInfo.id);
+            if (chat == null) {
+                chat = getMessagesController().getChat(-chatInfo.id);
+            }
+            if (chat != null) {
+                sharedMediaLayout.setNoForward(chat.noforwards);
+            }
+        }
         sharedMediaLayout.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
 
         ActionBarMenu menu = actionBar.createMenu();
@@ -5363,6 +5372,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         if (sharedMediaLayout != null) {
             sharedMediaLayout.setChatInfo(chatInfo);
+
+            TLRPC.Chat chat = getMessagesController().getChat(chatInfo.id);
+            if(chat == null) {
+                chat = getMessagesController().getChat(-chatInfo.id);
+            }
+            if(chat != null) {
+                sharedMediaLayout.setNoForward(chat.noforwards);
+            }
         }
         if (avatarsViewPager != null) {
             avatarsViewPager.setChatInfo(chatInfo);

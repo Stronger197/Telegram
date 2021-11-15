@@ -1865,8 +1865,11 @@ public class MessagesStorage extends BaseController {
                                 int onlyHistory = data.readInt32(false);
                                 int maxIdDelete = data.readInt32(false);
                                 boolean revoke = data.readBool(false);
+                                int minDate = data.readInt32(false);
+                                int maxDate = data.readInt32(false);
                                 TLRPC.InputPeer inputPeer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(did, first ? 1 : 0, onlyHistory, maxIdDelete, revoke, inputPeer, taskId));
+                                AndroidUtilities.runOnUIThread(() ->
+                                    getMessagesController().deleteDialog(did, first ? 1 : 0, onlyHistory, maxIdDelete, revoke, inputPeer, taskId, minDate, maxDate));
                                 break;
                             }
                             case 15: {
@@ -10176,6 +10179,21 @@ public class MessagesStorage extends BaseController {
         return null;
     }
 
+    public ArrayList<Integer> getMessages(long did, int startDate, int endDate) {
+        ArrayList<Integer> result = new ArrayList<>();
+        try {
+            SQLiteCursor cursor = database.queryFinalized("SELECT mid FROM messages_v2 WHERE uid=" + did + " AND date > " + startDate +" AND date <= " + endDate);
+
+            while (cursor.next()) {
+                result.add(cursor.intValue(0));
+            }
+            cursor.dispose();
+
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
     private void updateDialogsWithDeletedMessagesInternal(long originalDialogId, long channelId, ArrayList<Integer> messages, ArrayList<Long> additionalDialogsToUpdate) {
         try {
             ArrayList<Long> dialogsToUpdate = new ArrayList<>();

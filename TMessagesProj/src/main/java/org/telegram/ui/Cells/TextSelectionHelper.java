@@ -617,10 +617,16 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         this.topOffset = topOffset;
     }
 
+
+    public interface TextSelectionOverlayTapListener {
+        boolean onTap();
+    }
+
     public class TextSelectionOverlay extends View {
 
         Paint handleViewPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+        public TextSelectionOverlayTapListener listener = null;
         float pressedX;
         float pressedY;
         long pressedTime = 0;
@@ -656,6 +662,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
+            if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                if(listener != null) {
+                    return listener.onTap();
+                }
+            }
             if (!isSelectionMode()) return false;
             if (event.getPointerCount() > 1) {
                 return movingHandle;

@@ -42,6 +42,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.RadioButtonCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.SimpleTextCheckCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
@@ -62,6 +63,8 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private TextInfoPrivacyCell typeInfoCell;
     private HeaderCell headerCell;
     private HeaderCell headerCell2;
+    private HeaderCell savingContentHeaderCell; // or headerCell3?
+    private TextInfoPrivacyCell savingContentInfoCell; // or headerCell3?
     private TextInfoPrivacyCell checkTextView;
     private LinearLayout linearLayout;
     private ActionBarMenuItem doneButton;
@@ -71,6 +74,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private RadioButtonCell radioButtonCell2;
     private LinearLayout adminnedChannelsLayout;
     private LinearLayout linkContainer;
+    private LinearLayout savingContentContainer;
     private LinearLayout publicContainer;
     private LinearLayout privateContainer;
     private LinkActionView permanentLinkView;
@@ -80,6 +84,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private TextInfoPrivacyCell infoCell;
     private TextSettingsCell textCell;
     private TextSettingsCell textCell2;
+    private SimpleTextCheckCell savingContentCell;
 
     private boolean isPrivate;
 
@@ -399,6 +404,33 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         manageLinksInfoCell = new TextInfoPrivacyCell(context);
         linearLayout.addView(manageLinksInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+
+        savingContentContainer = new LinearLayout(context);
+        savingContentContainer.setOrientation(LinearLayout.VERTICAL);
+        savingContentContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        linearLayout.addView(savingContentContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        savingContentHeaderCell = new HeaderCell(context, 23);
+        savingContentContainer.addView(savingContentHeaderCell);
+        savingContentHeaderCell.setText(LocaleController.getString("GroupTypeHeader", R.string.GroupTypeHeader));
+        savingContentContainer.setVisibility(View.GONE);
+
+        savingContentInfoCell = new TextInfoPrivacyCell(context);
+        savingContentInfoCell.setBackground(Theme.getThemedDrawable(savingContentInfoCell.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        savingContentInfoCell.setText(LocaleController.getString("RestrictForwardingFromChatInfoHelp", R.string.RestrictForwardingFromChatInfoHelp));
+        linearLayout.addView(savingContentInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        savingContentInfoCell.setVisibility(View.GONE);
+
+
+        savingContentCell = new SimpleTextCheckCell(context);
+        savingContentCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+        savingContentCell.setTextAndValueAndCheck(LocaleController.getString("ChatSavingContent", R.string.ChatSavingContent), "TMP", getMessagesController().getChat(chatId).noforwards, false, false);
+        savingContentContainer.addView(savingContentCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        savingContentCell.setOnClickListener(v -> {
+            restrict(!savingContentCell.isChecked());
+            savingContentCell.setChecked(!savingContentCell.isChecked());
+        });
+
         if (!isPrivate && currentChat.username != null) {
             ignoreTextChanges = true;
             usernameTextView.setText(currentChat.username);
@@ -424,6 +456,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
     public void setInfo(TLRPC.ChatFull chatFull) {
         info = chatFull;
+
         if (chatFull != null) {
             if (chatFull.exported_invite != null) {
                 invite = chatFull.exported_invite;
@@ -532,7 +565,30 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         }));
     }
 
+    private void restrict(boolean flag) {
+        TLRPC.TL_messages_toggleNoForwards req = new TLRPC.TL_messages_toggleNoForwards();
+        req.enabled = flag;
+        req.peer = getMessagesController().getInputPeer(-chatId);
+
+        currentChat.noforwards = flag;
+        TLRPC.Chat newChat = getMessagesController().getChat(chatId);
+        newChat.noforwards = flag;
+        getMessagesController().putChat(newChat, false);
+
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+        });
+    }
+
     private void updatePrivatePublic() {
+        TLRPC.Chat chat = getMessagesController().getChat(chatId);
+        if((chat.megagroup && chat.username != null) || chat.has_geo) {
+            savingContentContainer.setVisibility(View.GONE);
+            savingContentInfoCell.setVisibility(View.GONE);
+        } else {
+            savingContentContainer.setVisibility(View.VISIBLE);
+            savingContentInfoCell.setVisibility(View.VISIBLE);
+        }
+
         if (sectionCell2 == null) {
             return;
         }
@@ -575,6 +631,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 typeInfoCell.setText(isPrivate ? LocaleController.getString("MegaPrivateLinkHelp", R.string.MegaPrivateLinkHelp) : LocaleController.getString("MegaUsernameHelp", R.string.MegaUsernameHelp));
                 headerCell.setText(isPrivate ? LocaleController.getString("ChannelInviteLinkTitle", R.string.ChannelInviteLinkTitle) : LocaleController.getString("ChannelLinkTitle", R.string.ChannelLinkTitle));
             }
+            savingContentHeaderCell.setText(LocaleController.getString("ChatSavingContentTitle", R.string.ChatSavingContentTitle));
             publicContainer.setVisibility(isPrivate ? View.GONE : View.VISIBLE);
             privateContainer.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
             manageLinksTextView.setVisibility(View.VISIBLE);

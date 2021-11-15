@@ -46,10 +46,33 @@ public class SendAsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void setData(ArrayList<TLRPC.Peer> peers, TLRPC.Peer current) {
-        if(peers.size() > 10) {
-            this.peers = peers.subList(0, 10);
+
+        ArrayList<TLRPC.Peer> filteredPeers = new ArrayList<>();
+        for(int i = 0; i < peers.size(); i++) {
+            TLRPC.Peer peer = peers.get(i);
+
+            if(peer instanceof TLRPC.TL_peerChannel) {
+                TLRPC.Chat chat = messagesController.getChat(peer.channel_id);
+                if(chat != null) {
+                    filteredPeers.add(peer);
+                }
+            } else if(peer instanceof TLRPC.TL_peerChat) {
+                TLRPC.Chat chat = messagesController.getChat(-peer.chat_id);
+                if(chat != null) {
+                    filteredPeers.add(peer);
+                }
+            } else if(peer instanceof TLRPC.TL_peerUser) {
+                TLRPC.User user = messagesController.getUser(peer.user_id);
+                if(user != null) {
+                    filteredPeers.add(peer);
+                }
+            }
+        }
+
+        if(filteredPeers.size() > 10) {
+            this.peers = filteredPeers.subList(0, 10);
         } else {
-            this.peers = peers;
+            this.peers = filteredPeers;
         }
         this.current = current;
         notifyDataSetChanged();

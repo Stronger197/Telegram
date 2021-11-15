@@ -185,8 +185,12 @@ public class RangeDateCalendarActivity extends BaseFragment {
                 } else {
                     secondDayCalendar.set(firstSelectedDay.year, firstSelectedDay.month, firstSelectedDay.day, 23, 59, 59);
                 }
+                secondDayCalendar.setTimeZone(TimeZone.getDefault());
 
-                callback.onDateSelected((int) (firstDayCalendar.getTimeInMillis() / 1000), (int) (secondDayCalendar.getTimeInMillis() / 1000), daysCount);
+                long firstTimeZoneOffset = TimeZone.getDefault().getOffset(firstDayCalendar.getTimeInMillis());
+                long secondTimeZoneOffset = TimeZone.getDefault().getOffset(secondDayCalendar.getTimeInMillis());
+
+                callback.onDateSelected((int) ((firstDayCalendar.getTimeInMillis() - firstTimeZoneOffset) / 1000), (int) ((secondDayCalendar.getTimeInMillis() - secondTimeZoneOffset) / 1000), daysCount);
             }
         });
 

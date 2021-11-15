@@ -19,6 +19,9 @@ import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
+import androidx.annotation.UiThread;
+import androidx.collection.LongSparseArray;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
@@ -44,9 +47,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
-
-import androidx.annotation.UiThread;
-import androidx.collection.LongSparseArray;
 
 public class MessagesStorage extends BaseController {
 
@@ -10179,21 +10179,32 @@ public class MessagesStorage extends BaseController {
         return null;
     }
 
-    public ArrayList<Integer> getMessages(long did, int startDate, int endDate) {
-        ArrayList<Integer> result = new ArrayList<>();
-        try {
-            SQLiteCursor cursor = database.queryFinalized("SELECT mid FROM messages_v2 WHERE uid=" + did + " AND date > " + startDate +" AND date <= " + endDate);
+    public void deleteMessagesByDates(long did, int startDate, int endDate){
+        storageQueue.postRunnable(()->{
+            try{
+                ArrayList<Integer> result = new ArrayList<>();
+                SQLiteCursor cursor = null;
+                try{
+                    cursor = database.queryFinalized("SELECT mid FROM messages_v2 WHERE uid=? AND date>=? AND date<=?", did, startDate, endDate);
+                    while(cursor.next()){
+                        result.add(cursor.intValue(0));
+                    }
+                } catch (SQLiteException e) {
 
-            while (cursor.next()) {
-                result.add(cursor.intValue(0));
+                } finally {
+                    if(cursor != null) {
+                        cursor.dispose();
+                    }
+                }
+                markMessagesAsDeletedInternal(did, result, true, false);
+                updateDialogsWithDeletedMessagesInternal(did, 0, result, null);
+                AndroidUtilities.runOnUIThread(()->getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, result, 0L, false));
+            } catch(Exception e){
+                // do nothing
             }
-            cursor.dispose();
-
-        } catch (SQLiteException e) {
-            e.printStackTrace();
-        }
-        return result;
+        });
     }
+
     private void updateDialogsWithDeletedMessagesInternal(long originalDialogId, long channelId, ArrayList<Integer> messages, ArrayList<Long> additionalDialogsToUpdate) {
         try {
             ArrayList<Long> dialogsToUpdate = new ArrayList<>();

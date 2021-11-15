@@ -21,7 +21,6 @@ import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
@@ -4918,10 +4917,7 @@ public class MessagesController extends BaseController implements NotificationCe
             boolean isPromoDialog = false;
 
             if(minDate != 0 && maxDate != 0) {
-                ArrayList<Integer> msid = getMessagesStorage().getMessages(did, minDate, maxDate);
-                getMessagesStorage().markMessagesAsDeleted(did, msid, true, true, false);
-                getMessagesStorage().updateDialogsWithDeletedMessages(did, 0, msid, null, true);
-                getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, msid, 0L, false);
+                getMessagesStorage().deleteMessagesByDates(did, minDate, maxDate);
             } else {
                 getMessagesStorage().deleteDialog(did, onlyHistory);
             }

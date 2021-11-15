@@ -235,6 +235,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     private SeekBarWaveform seekBarWaveform;
     public SendMessageAsView sendMessageAsView;
+    private boolean isSendMessageAsViewVisibleOld = false;
     private boolean isInitLineCount;
     private int lineCount = 1;
     private AdjustPanLayoutHelper adjustPanLayoutHelper;
@@ -7791,6 +7792,19 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public void setStickersExpanded(boolean expanded, boolean animated, boolean byDrag) {
+
+        if(expanded) {
+            isSendMessageAsViewVisibleOld = sendMessageAsView.getVisibility() == View.VISIBLE;
+            sendMessageAsView.setVisibility(View.GONE);
+            inputTextFrameLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 48, 0));
+        } else {
+            if(isSendMessageAsViewVisibleOld) {
+                sendMessageAsView.setVisibility(View.VISIBLE);
+                inputTextFrameLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 40, 0, 48, 0));
+            }
+        }
+
+
         if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || waitingForKeyboardOpenAfterAnimation) {
             return;
         }

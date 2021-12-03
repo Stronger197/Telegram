@@ -121,6 +121,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessageReactionsView;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -691,6 +692,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private ChatMessageCell dummyMessageCell;
     private FireworksOverlay fireworksOverlay;
+    private FrameLayout reactionsOverlay;
+    private BackupImageView reactionsAnimationImageView;
 
     private boolean swipeBackEnabled = true;
 
@@ -803,6 +806,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private PinchToZoomHelper pinchToZoomHelper;
     private EmojiAnimationsOverlay emojiAnimationsOverlay;
+    private ReactionsAnimationsOverlay reactionsAnimationsOverlay;
 
     private interface ChatActivityDelegate {
         default void openReplyMessage(int mid) {
@@ -2643,6 +2647,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     pullingDownDrawable.onAttach();
                 }
                 emojiAnimationsOverlay.onAttachedToWindow();
+                reactionsAnimationsOverlay.onAttachedToWindow();
             }
 
             @Override
@@ -2654,6 +2659,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     pullingDownDrawable = null;
                 }
                 emojiAnimationsOverlay.onDetachedFromWindow();
+                reactionsAnimationsOverlay.onDetachedFromWindow();
             }
 
             @Override
@@ -3070,6 +3076,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
 
                 emojiAnimationsOverlay.draw(canvas);
+                reactionsAnimationsOverlay.draw(canvas);
             }
 
             @Override
@@ -4458,9 +4465,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (groupedMessages != null && groupedMessages.transitionParams.backgroundChangeBounds) {
                                 float x = cell.getNonAnimationTranslationX(true);
                                 float l = (groupedMessages.transitionParams.left + x + groupedMessages.transitionParams.offsetLeft);
-                                float t = (groupedMessages.transitionParams.top + groupedMessages.transitionParams.offsetTop);
+                                float t = (groupedMessages.transitionParams.top + groupedMessages.transitionParams.offsetTop + 100);
                                 float r = (groupedMessages.transitionParams.right + x + groupedMessages.transitionParams.offsetRight);
-                                float b = (groupedMessages.transitionParams.bottom + groupedMessages.transitionParams.offsetBottom);
+                                float b = (groupedMessages.transitionParams.bottom + groupedMessages.transitionParams.offsetBottom + 100);
 
                                 if (!groupedMessages.transitionParams.backgroundChangeBounds) {
                                     t += cell.getTranslationY();
@@ -5098,7 +5105,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         MessageObject.GroupedMessagePosition position = cell.getCurrentPosition();
                         if (position != null && position.siblingHeights != null) {
                             float maxHeight = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f;
-                            int h = cell.getExtraInsetHeight();
+                            int h = cell.getExtraInsetHeight() ;
                             for (int a = 0; a < position.siblingHeights.length; a++) {
                                 h += (int) Math.ceil(maxHeight * position.siblingHeights[a]);
                             }
@@ -5250,6 +5257,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 invalidateMessagesVisiblePart();
                 textSelectionHelper.onParentScrolled();
                 emojiAnimationsOverlay.onScrolled(dy);
+                reactionsAnimationsOverlay.onScrolled(dy);
             }
         });
 
@@ -7733,7 +7741,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         contentView.addView(textSelectionHelper.getOverlayView(context));
         fireworksOverlay = new FireworksOverlay(context);
+        reactionsOverlay = new FrameLayout(context);
+        reactionsAnimationImageView = new BackupImageView(context);
+
+        reactionsOverlay.addView(reactionsAnimationImageView, LayoutHelper.createFrame(AndroidUtilities.dp(100), AndroidUtilities.dp(100), Gravity.CENTER));
+
         contentView.addView(fireworksOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        contentView.addView(reactionsOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         textSelectionHelper.setParentView(chatListView);
 
         long searchFromUserId = getArguments().getInt("search_from_user_id", 0);
@@ -7858,6 +7872,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         });
 
         emojiAnimationsOverlay = new EmojiAnimationsOverlay(ChatActivity.this, contentView, chatListView, currentAccount, dialog_id, threadMessageId);
+        reactionsAnimationsOverlay = new ReactionsAnimationsOverlay(ChatActivity.this, contentView, chatListView, currentAccount, dialog_id, threadMessageId);
         return fragmentView;
     }
 
@@ -14997,6 +15012,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         } else if (id == NotificationCenter.didUpdateReactions) {
+            Log.e("DEBUG_ABCD", "reactions");
             long did = (Long) args[0];
             if (did == dialog_id || did == mergeDialogId) {
                 int msgId = (Integer) args[1];
@@ -16765,6 +16781,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (replyObject != null && replyObject.hasReplies()) {
                             replyObject.messageOwner.replies.replies--;
                             replyObject.viewsReloaded = false;
+                            replyObject.reactionsReloaded = false;
                         }
                     }
                 }
@@ -19994,7 +20011,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 });
             }
 
-            LinearLayout scrimPopupContainerLayout = new LinearLayout(contentView.getContext()) {
+            FrameLayout scrimPopupContainerLayout = new FrameLayout(contentView.getContext()) {
                 @Override
                 public boolean dispatchKeyEvent(KeyEvent event) {
                     if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
@@ -20026,14 +20043,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return false;
                 }
             });
-            scrimPopupContainerLayout.setOrientation(LinearLayout.VERTICAL);
             boolean showMessageSeen = currentChat != null && message.isOutOwner() && message.isSent() && !message.isEditing() && !message.isSending() && !message.isSendError() && !message.isContentUnread() && !message.isUnread() && (ConnectionsManager.getInstance(currentAccount).getCurrentTime() - message.messageOwner.date < 7 * 86400)  && (ChatObject.isMegagroup(currentChat) || !ChatObject.isChannel(currentChat)) && chatInfo != null && chatInfo.participants_count < 50 && !(message.messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByRequest);
             MessageSeenView messageSeenView = null;
+
+            FrameLayout messageSeenLayout = null;
             if (showMessageSeen) {
                 messageSeenView = new MessageSeenView(contentView.getContext(), currentAccount, message, currentChat);
                 Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
                 shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-                FrameLayout messageSeenLayout = new FrameLayout(contentView.getContext());
+                messageSeenLayout = new FrameLayout(contentView.getContext());
                 messageSeenLayout.addView(messageSeenView);
                 messageSeenLayout.setBackground(shadowDrawable2);
                 MessageSeenView finalMessageSeenView = messageSeenView;
@@ -20196,9 +20214,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         });
                     }
                 });
-                scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 60));
+                scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, 60, Gravity.TOP, 0, 60, 50, 0));
+
             }
-            scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, showMessageSeen ? -8 : 0, 0, 0));
+
+
+            scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, showMessageSeen ? 120 : 60, 50, 0));
+
+
             scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
                 @Override
                 public void dismiss() {
@@ -20258,8 +20281,92 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
             popupLayout.setFitItems(true);
 
+
+
+
+            MessageReactionsView reactionsView = null;
+            FrameLayout reactionsLayout = null;
+
+
+            if (true) {
+                reactionsView = new MessageReactionsView(contentView.getContext(), currentAccount, message, currentChat, (reaction, chat, messageObject) -> {
+                    TLRPC.TL_messages_sendReaction req = new TLRPC.TL_messages_sendReaction();
+                    req.flags = 1;
+                    req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
+                    req.msg_id = messageObject.getId();
+                    req.reaction = reaction.reaction;
+                    getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        if(error != null) {
+
+                        }
+                        if (response != null) {
+
+                            getMessagesController().processUpdates((TLRPC.Updates) response, false);
+                        }
+                    }));
+
+                    scrimPopupWindow.dismiss();
+
+                    int count = chatListView.getChildCount();
+                    ChatMessageCell currentCell = null;
+                    for (int num = 0; num < count; num++) {
+                        View child = chatListView.getChildAt(num);
+
+                        if (child instanceof ChatMessageCell) {
+                            ChatMessageCell cell = (ChatMessageCell) child;
+                            if(cell.getMessageObject() == messageObject) {
+                                currentCell = cell;
+                            }
+                        }
+                    }
+                    reactionsAnimationsOverlay.onTapReaction(currentCell, reaction);
+
+
+
+                });
+                Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.reactionsbubble).mutate();
+                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+//                reactionsLayout = new FrameLayout(contentView.getContext());
+//                reactionsView.setBackgroundColor(Color.BLACK);
+//                reactionsView.addView(reactionsView);
+                reactionsView.setBackground(shadowDrawable2);
+
+                ArrayList<TLRPC.TL_availableReaction> reactions = new ArrayList();
+                if(chatInfo != null && chatInfo.available_reactions != null) {
+                    for (TLRPC.TL_availableReaction reaction : getMessagesController().availableReactions) {
+                        if (chatInfo.available_reactions.contains(reaction.reaction)) {
+                            reactions.add(reaction);
+                        }
+                    }
+                } else {
+                    reactions.addAll(getMessagesController().availableReactions);
+                }
+                reactionsView.setData(reactions);
+
+
+                int size = reactions.size() * LayoutHelper.getSize(55);
+
+
+                boolean showReactions = !reactions.isEmpty() && message.isSent() && !message.isEditing() && !message.isSending() && !message.isSendError();
+
+
+                if(showReactions) {
+                    scrimPopupContainerLayout.addView(
+                        reactionsView,
+                        new FrameLayout.LayoutParams(
+                            Math.min(size, scrimPopupContainerLayout.getMeasuredWidth()),
+                            LayoutHelper.getSize(84),
+                            Gravity.RIGHT
+                        )
+                    );
+                }
+            }
+
+
+
+
             if (messageSeenView != null) {
-                messageSeenView.getLayoutParams().width = scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(16);
+                messageSeenView.getLayoutParams().width = scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(66);
             }
             int popupX = v.getLeft() + (int) x - scrimPopupContainerLayout.getMeasuredWidth() + backgroundPaddings.left - AndroidUtilities.dp(28);
             if (popupX < AndroidUtilities.dp(6)) {

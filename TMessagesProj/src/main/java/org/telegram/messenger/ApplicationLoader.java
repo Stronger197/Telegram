@@ -145,7 +145,16 @@ public class ApplicationLoader extends Application {
         SharedConfig.loadConfig();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             UserConfig.getInstance(a).loadConfig();
-            MessagesController.getInstance(a);
+            final MessagesController msgController = MessagesController.getInstance(a);
+
+            TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
+            ConnectionsManager.getInstance(a).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response != null) {
+
+                    msgController.availableReactions = ((TLRPC.TL_messages_availableReactions) response).reactions;
+                }
+            }));
+
             if (a == 0) {
                 SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + ConnectionsManager.getInstance(a).getCurrentTime() + "__";
             } else {

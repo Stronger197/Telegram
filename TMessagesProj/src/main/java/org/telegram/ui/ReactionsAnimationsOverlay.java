@@ -10,7 +10,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -26,7 +25,6 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 
@@ -35,7 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
-public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCenterDelegate {
+public class ReactionsAnimationsOverlay implements NotificationCenter.NotificationCenterDelegate {
 
     private final int ANIMATION_JSON_VERSION = 1;
     private final String INTERACTIONS_STICKER_PACK = "EmojiAnimations";
@@ -82,7 +80,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     int threadMsgId;
 
 
-    public EmojiAnimationsOverlay(ChatActivity chatActivity, FrameLayout frameLayout, RecyclerListView chatListView, int currentAccount, long dialogId, int threadMsgId) {
+    public ReactionsAnimationsOverlay(ChatActivity chatActivity, FrameLayout frameLayout, RecyclerListView chatListView, int currentAccount, long dialogId, int threadMsgId) {
         this.chatActivity = chatActivity;
         this.contentLayout = frameLayout;
         this.listView = chatListView;
@@ -215,7 +213,11 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     }
 
     public void draw(Canvas canvas) {
+        Log.e("DEBUG_ANIMATION", "draw TEST 1");
+
         if (!drawingObjects.isEmpty()) {
+            Log.e("DEBUG_ANIMATION", "draw TEST 2: " + drawingObjects.size());
+
             for (int i = 0; i < drawingObjects.size(); i++) {
                 DrawingObject drawingObject = drawingObjects.get(i);
                 drawingObject.viewFound = false;
@@ -228,7 +230,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
 
                         if (cell.getMessageObject().getId() == drawingObject.messageId) {
                             drawingObject.viewFound = true;
-                            float viewX = listView.getX() + child.getX() + cell.getPhotoImage().getImageX();
+                            float viewX = cell.captionX;
                             float viewY = listView.getY() + child.getY() + cell.getPhotoImage().getImageY();
                             Log.e("DEBUG_ANIMATION", "draw 3 x: " + viewX + " viewY: " + viewY);
 
@@ -237,10 +239,20 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                             } else {
                                 viewX += -AndroidUtilities.dp(24);
                             }
-                            viewY -= cell.getPhotoImage().getImageWidth();
+
+                            int size = 0;
+                            size = cell.captionWidth;
+                            if(size == 0) {
+                                size = cell.backgroundWidth - AndroidUtilities.dp(24);
+                            }
+
+                            viewX = -size / 2f;
+                            viewY = child.getY() + cell.getHeight() - cell.captionHeight - 216;
+                            Log.e("DEBUG_ANIMATION", "draw 3.1 cell.reactionsX: " + cell.reactionsX + " listView.getY(): " + listView.getY() + " child.getY(): " + child.getY());
+
                             drawingObject.lastX = viewX;
                             drawingObject.lastY = viewY;
-                            drawingObject.lastW = cell.getPhotoImage().getImageWidth();
+//                            drawingObject.lastW = drawingObject.lastW;
 
                             Log.e("DEBUG_ANIMATION", "draw 3.5 drawingObject.lastX: " + drawingObject.lastX + " drawingObject.lastY: " + drawingObject.lastY + " drawingObject.lastW: " + drawingObject.lastW);
 
@@ -251,7 +263,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
 
 //                Log.e("DEBUG_ANIMATION", "draw 4");
 
-                drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.randomOffsetX, drawingObject.lastY + drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
+                drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + 0 + drawingObject.randomOffsetX, drawingObject.lastY + 0 + drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
                 if (!drawingObject.isOut) {
 //                    Log.e("DEBUG_ANIMATION", "draw 5");
 
@@ -282,6 +294,130 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             }
             contentLayout.invalidate();
         }
+    }
+
+    public void onTapReaction(ChatMessageCell view, TLRPC.TL_availableReaction reaction) {
+        Log.e("DEBUG_ANIMATION", "onTapReaction");
+
+        if(view == null || view.getMessageObject() == null || view.getMessageObject().getId() < 0) {
+            return;
+        }
+
+        Log.e("DEBUG_ANIMATION", "animationTap");
+        showAnimationForReaction(view, -1, reaction);
+        showAnimationForReaction2(view, -1, reaction);
+    }
+
+
+    private boolean showAnimationForReaction(ChatMessageCell view, int animation, TLRPC.TL_availableReaction reaction) {
+        if (drawingObjects.size() > 12) {
+            return false;
+        }
+        Log.e("DEBUG_ANIMATION", "1");
+
+
+
+        if (reaction == null) {
+            return false;
+        }
+        Log.e("DEBUG_ANIMATION", "3");
+
+        float imageH = 432;
+        float imageW = 432;
+        if (imageH <= 0 || imageW <= 0) {
+            return false;
+        }
+        Log.e("DEBUG_ANIMATION", "4: h " + imageH + " w " + imageW);
+
+
+
+        if (true) {
+            TLRPC.Document document = reaction.effect_animation;
+
+            DrawingObject drawingObject = new DrawingObject();
+            drawingObject.randomOffsetX = 0;
+            drawingObject.randomOffsetY = 0;
+            drawingObject.messageId = view.getMessageObject().getId();
+            drawingObject.document = document;
+            drawingObject.isOut = view.getMessageObject().isOutOwner();
+
+
+            ImageLocation imageLocation = ImageLocation.getForDocument(document);
+            int w = (int) (2f * imageW / AndroidUtilities.density);
+            drawingObject.imageReceiver.setImage(imageLocation, w + "_" + w + "_pcache", null, "tgs", set, 1);
+            drawingObject.imageReceiver.setLayerNum(Integer.MAX_VALUE);
+            drawingObject.imageReceiver.setAllowStartAnimation(true);
+            drawingObject.imageReceiver.setAutoRepeat(0);
+            drawingObject.lastW = imageW;
+            if (drawingObject.imageReceiver.getLottieAnimation() != null) {
+                drawingObject.imageReceiver.getLottieAnimation().start();
+            }
+            drawingObjects.add(drawingObject);
+            drawingObject.imageReceiver.onAttachedToWindow();
+            drawingObject.imageReceiver.setParentView(contentLayout);
+            contentLayout.invalidate();
+            Log.e("DEBUG_ANIMATION", "5");
+
+
+            return true;
+        }
+        return false;
+    }
+
+
+    private boolean showAnimationForReaction2(ChatMessageCell view, int animation, TLRPC.TL_availableReaction reaction) {
+        if (drawingObjects.size() > 12) {
+            return false;
+        }
+        Log.e("DEBUG_ANIMATION", "1");
+
+
+
+        if (reaction == null) {
+            return false;
+        }
+        Log.e("DEBUG_ANIMATION", "3");
+
+        float imageH = 128;
+        float imageW = 128;
+        if (imageH <= 0 || imageW <= 0) {
+            return false;
+        }
+        Log.e("DEBUG_ANIMATION", "4: h " + imageH + " w " + imageW);
+
+
+
+        if (true) {
+            TLRPC.Document document = reaction.activate_animation;
+
+            DrawingObject drawingObject = new DrawingObject();
+            drawingObject.randomOffsetX = 608;
+            drawingObject.randomOffsetY = 128;
+            drawingObject.messageId = view.getMessageObject().getId();
+            drawingObject.document = document;
+            drawingObject.isOut = view.getMessageObject().isOutOwner();
+
+
+            ImageLocation imageLocation = ImageLocation.getForDocument(document);
+            int w = (int) (2f * imageW / AndroidUtilities.density);
+            drawingObject.imageReceiver.setImage(imageLocation, w + "_" + w + "_pcache", null, "tgs", set, 1);
+            drawingObject.imageReceiver.setLayerNum(Integer.MAX_VALUE);
+            drawingObject.imageReceiver.setAllowStartAnimation(true);
+            drawingObject.imageReceiver.setAutoRepeat(0);
+            if (drawingObject.imageReceiver.getLottieAnimation() != null) {
+                drawingObject.imageReceiver.getLottieAnimation().start();
+            }
+            drawingObject.lastW = imageW;
+            drawingObjects.add(drawingObject);
+            drawingObject.imageReceiver.onAttachedToWindow();
+            drawingObject.imageReceiver.setParentView(contentLayout);
+            contentLayout.invalidate();
+            Log.e("DEBUG_ANIMATION", "5");
+
+
+            return true;
+        }
+        return false;
     }
 
     public void onTapItem(ChatMessageCell view, ChatActivity chatActivity) {

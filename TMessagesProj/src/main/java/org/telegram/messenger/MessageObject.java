@@ -111,6 +111,7 @@ public class MessageObject {
     public VideoEditedInfo videoEditedInfo;
     public boolean shouldRemoveVideoEditedInfo;
     public boolean viewsReloaded;
+    public boolean reactionsReloaded;
     public boolean pollVisibleOnScreen;
     public long pollLastCheckTime;
     public int wantedBotKeyboardWidth;

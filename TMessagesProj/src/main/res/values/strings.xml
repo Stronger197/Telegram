@@ -417,6 +417,7 @@
     <string name="ChannelSubscribers">Subscribers</string>
     <string name="ChannelBlacklist">Removed Users</string>
     <string name="ChannelPermissions">Permissions</string>
+    <string name="ChannelReactions">Reactions</string>
     <string name="ChannelPermissionsHeader">What can members of this group do?</string>
     <string name="ChannelAddException">Add Exception</string>
     <string name="ChannelSearchException">Search Exceptions</string>
@@ -1951,6 +1952,7 @@
     <string name="Long">Long</string>
     <string name="AutomaticMediaDownload">Automatic media download</string>
     <string name="AutoDownloadMedia">Auto-Download Media</string>
+    <string name="EnableReactions">Enable Reactions</string>
     <string name="AutoDownloadOnAllChats">On in all chats</string>
     <string name="AutoDownloadUpToOnAllChats">Up to %1$s in all chats</string>
     <string name="AutoDownloadOff">Off</string>

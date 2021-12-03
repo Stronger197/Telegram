@@ -108,6 +108,8 @@ public class MessagesController extends BaseController implements NotificationCe
 
     private boolean dialogsInTransaction;
 
+    public ArrayList<TLRPC.TL_availableReaction> availableReactions;
+
     private LongSparseArray<Boolean> loadingPeerSettings = new LongSparseArray<>();
 
     private ArrayList<Long> createdDialogIds = new ArrayList<>();
@@ -130,9 +132,11 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean blockedEndReached;
 
     private LongSparseArray<ArrayList<Integer>> channelViewsToSend = new LongSparseArray<>();
+    private LongSparseArray<ArrayList<Integer>> reactionsToCheck = new LongSparseArray<>();
     private LongSparseArray<SparseArray<MessageObject>> pollsToCheck = new LongSparseArray<>();
     private int pollsToCheckSize;
     private long lastViewsCheckTime;
+    private long lastReactionsCheckTime;
 
     public ArrayList<DialogFilter> dialogFilters = new ArrayList<>();
     public SparseArray<DialogFilter> dialogFiltersById = new SparseArray<>();
@@ -2568,6 +2572,7 @@ public class MessagesController extends BaseController implements NotificationCe
         joiningToChannels.clear();
         migratedChats.clear();
         channelViewsToSend.clear();
+        reactionsToCheck.clear();
         pollsToCheck.clear();
         pollsToCheckSize = 0;
         dialogsServerOnly.clear();
@@ -4071,6 +4076,19 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
+    public void setAvailableReactions(ArrayList<String> reactions, long chatId) {
+        TLRPC.TL_messages_setChatAvailableReactions req = new TLRPC.TL_messages_setChatAvailableReactions();
+        req.available_reactions = reactions;
+        req.peer = getInputPeer(-chatId);
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            if(response != null) {
+                processUpdates((TLRPC.TL_updates) response, false);
+                AndroidUtilities.runOnUIThread(() -> {
+                    loadFullChat(chatId, 0, true);
+                }, 0);
+            }
+        });
+    }
     public void setUserAdminRole(long chatId, TLRPC.User user, TLRPC.TL_chatAdminRights rights, String rank, boolean isChannel, BaseFragment parentFragment, boolean addingNew) {
         if (user == null || rights == null) {
             return;
@@ -5311,8 +5329,32 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         int currentServerTime = getConnectionsManager().getCurrentTime();
+
+        if (Math.abs(System.currentTimeMillis() - lastReactionsCheckTime) >= 15000) {
+            lastReactionsCheckTime = System.currentTimeMillis();
+
+            if(reactionsToCheck.size() != 0) {
+                for (int a = 0; a < reactionsToCheck.size(); a++) {
+                    long key = reactionsToCheck.keyAt(a);
+                    TLRPC.TL_messages_getMessagesReactions req = new TLRPC.TL_messages_getMessagesReactions();
+                    req.peer = getInputPeer(key);
+                    req.id = reactionsToCheck.valueAt(a);
+                    getConnectionsManager().sendRequest(req, (response, error) -> {
+                        if(error != null) {
+
+                        }
+                        if (response != null) {
+                            processUpdates((TLRPC.TL_updates) response,false);
+                        }
+                    });
+                }
+            }
+        }
+
         if (Math.abs(System.currentTimeMillis() - lastViewsCheckTime) >= 5000) {
             lastViewsCheckTime = System.currentTimeMillis();
+
+            Log.e("DEBUG_ABCD_E", "checkMEssages");
             if (channelViewsToSend.size() != 0) {
                 for (int a = 0; a < channelViewsToSend.size(); a++) {
                     long key = channelViewsToSend.keyAt(a);
@@ -8460,6 +8502,21 @@ public class MessagesController extends BaseController implements NotificationCe
             if (ids == null) {
                 ids = new ArrayList<>();
                 channelViewsToSend.put(peer, ids);
+            }
+            if (!ids.contains(id)) {
+                ids.add(id);
+            }
+        });
+    }
+
+    public void addReactionsQueue(MessageObject messageObject) {
+        Utilities.stageQueue.postRunnable(() -> {
+            long peer = messageObject.getDialogId();
+            int id = messageObject.getId();
+            ArrayList<Integer> ids = reactionsToCheck.get(peer);
+            if (ids == null) {
+                ids = new ArrayList<>();
+                reactionsToCheck.put(peer, ids);
             }
             if (!ids.contains(id)) {
                 ids.add(id);
@@ -13349,6 +13406,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         } else {
                             dialogId = update.peer.user_id;
                         }
+                        Log.e("DEBUG_ABCD", "updateReacitonmessagesController");
                         getNotificationCenter().postNotificationName(NotificationCenter.didUpdateReactions, dialogId, update.msg_id, update.reactions);
                     } else if (baseUpdate instanceof TLRPC.TL_updateTheme) {
                         TLRPC.TL_updateTheme update = (TLRPC.TL_updateTheme) baseUpdate;

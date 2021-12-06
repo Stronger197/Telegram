@@ -11976,18 +11976,30 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         } else {
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             paint.setStyle(Paint.Style.FILL);
-            paint.setColor(getThemedColor(Theme.key_chat_inAudioSeekbarFill));
+            if(Theme.isCurrentThemeDark() || !currentMessageObject.isOutOwner()) {
+                textColor = 0xff72b5e8;
+
+                paint.setColor(0xff72b5e8);
+            } else {
+                textColor = 0xff65b05b;
+
+                paint.setColor(0xff65b05b);
+            }
             paint.setAlpha(64);
 
             if(reaction.chosen) {
                 strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 strokePaint.setStrokeWidth(AndroidUtilities.dp(2));
                 strokePaint.setStyle(Paint.Style.STROKE);
-                strokePaint.setColor(getThemedColor(Theme.key_chat_inAudioSeekbarFill));
+
+                if(Theme.isCurrentThemeDark() || !currentMessageObject.isOutOwner()) {
+                    strokePaint.setColor(0xff72b5e8);
+                } else {
+                    strokePaint.setColor(0xff65b05b);
+                }
             }
 
             drawableColor = paint;
-            textColor = getThemedColor(Theme.key_chat_inAudioSeekbarFill);
         }
 
         ReactionDrawable drawable = new ReactionDrawable(reaction.count, reaction.reaction, 16, 0, reactionsX - x + reactionOffsetX, reactionsY  - y + reactionOffsetY, currentAccount, currentMessageObject, drawableColor, textColor, overlayColor, strokePaint);
@@ -12087,7 +12099,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if(reactionButtons.size() == 1 && reactionButtons.get(0).isCurrent) {
-            return new Pair<>(buttonX, button.y + button.height / 2f);
+            return new Pair<>(buttonX + AndroidUtilities.dp(10), button.y + button.height / 2f);
         }
 
         return new Pair<>(buttonX + button.width * 1.5f, button.y + button.height / 2f);

@@ -1,46 +1,35 @@
 package org.telegram.messenger;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.GroupCreateUserCell;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ReactionsPlaceholderDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Random;
 
 
 public class MessageReactionsView extends FrameLayout {
@@ -73,7 +62,7 @@ public class MessageReactionsView extends FrameLayout {
         };
 
         adapter = new EmojiAdapter(context);
-        adapter.setData(new ArrayList<>());
+
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
         layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
@@ -90,37 +79,16 @@ public class MessageReactionsView extends FrameLayout {
             listener.reactionClicked(reaction, chat, messageObject);
         });
 
-//        flickerLoadingView = new FlickerLoadingView(context);
-//        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, null);
-//        flickerLoadingView.setViewType(FlickerLoadingView.MESSAGE_SEEN_TYPE);
-//        flickerLoadingView.setIsSingleCell(false);
-//        addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
-//
         addView(emojiRecycler, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
-//        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), AndroidUtilities.dp(4), AndroidUtilities.dp(4)));
         setEnabled(false);
     }
 
 
     public void setData(ArrayList<TLRPC.TL_availableReaction> data) {
+
         adapter.setData(data);
     }
-
-//    @Override
-//    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-//        if (flickerLoadingView.getVisibility() == View.VISIBLE) {
-//            ignoreLayout = true;
-//            flickerLoadingView.setVisibility(View.GONE);
-//            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-//            flickerLoadingView.getLayoutParams().width = getMeasuredWidth();
-//            flickerLoadingView.setVisibility(View.VISIBLE);
-//            ignoreLayout = false;
-//            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-//        } else {
-//            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-//        }
-//    }
 
     public class EmojiAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -161,12 +129,70 @@ public class MessageReactionsView extends FrameLayout {
             return new RecyclerListView.Holder(rootView);
         }
 
+        public void runAnim(BackupImageView imageView, TLRPC.TL_availableReaction reaction) {
+            imageView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if(!ViewCompat.isAttachedToWindow(imageView)) {
+                        return;
+                    }
+
+                    Random r = new Random();
+                    int low = 1;
+                    int high = 5;
+                    int result = r.nextInt(high-low) + low;
+
+                    if(result == 1) {
+                        imageView.getImageReceiver().getLottieAnimation().start();
+                        imageView.getImageReceiver().getLottieAnimation().setOnFinishCallback(() -> {
+
+                            imageView.getImageReceiver().getLottieAnimation().stop();
+
+                            runAnim(imageView, reaction);
+                        }, 118);
+                    } else {
+                        runAnim(imageView, reaction);
+                    }
+                }
+            }, 500);
+        }
+
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             FrameLayout cell = (FrameLayout) holder.itemView;
 
             TLRPC.TL_availableReaction reaction = reactions.get(position);
-            ((BackupImageView) cell.getChildAt(0)).setImage(ImageLocation.getForDocument(reaction.select_animation), "40_40", null, 0, this);
+            BackupImageView imageView =(BackupImageView) cell.getChildAt(0);
+
+            ReactionsPlaceholderDrawable reactionsPlaceholderDrawable = new ReactionsPlaceholderDrawable();
+            reactionsPlaceholderDrawable.setBounds(cell.getLeft(), cell.getTop(), cell.getRight(), cell.getBottom());
+
+            imageView.setImage(ImageLocation.getForDocument(reaction.select_animation), "40_40", reactionsPlaceholderDrawable, 0, this);
+
+            ObjectAnimator animator = ObjectAnimator.ofFloat(imageView, View.ALPHA, 0.0f, 0.5f);
+            animator.setDuration(1000);
+            animator.setRepeatMode(ValueAnimator.REVERSE);
+            animator.setRepeatCount(ValueAnimator.INFINITE);
+            animator.start();
+
+
+            imageView.getImageReceiver().setDelegate(new ImageReceiver.ImageReceiverDelegate() {
+                @Override
+                public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb, boolean memCache) {
+
+                }
+
+                @Override
+                public void onAnimationReady(ImageReceiver imageReceiver) {
+                    animator.cancel();
+
+                    imageView.setAlpha(1);
+
+                    imageView.getImageReceiver().getLottieAnimation().setCurrentFrame(0);
+                    imageReceiver.getLottieAnimation().stop();
+                    runAnim(imageView, reaction);
+                }
+            });
         }
 
         @Override

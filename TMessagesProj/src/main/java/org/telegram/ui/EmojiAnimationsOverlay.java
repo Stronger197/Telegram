@@ -219,18 +219,15 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             for (int i = 0; i < drawingObjects.size(); i++) {
                 DrawingObject drawingObject = drawingObjects.get(i);
                 drawingObject.viewFound = false;
-                Log.e("DEBUG_ANIMATION", "draw 1");
                 for (int k = 0; k < listView.getChildCount(); k++) {
                     View child = listView.getChildAt(k);
                     if (child instanceof ChatMessageCell) {
                         ChatMessageCell cell = (ChatMessageCell) child;
-                        Log.e("DEBUG_ANIMATION", "draw 2");
 
                         if (cell.getMessageObject().getId() == drawingObject.messageId) {
                             drawingObject.viewFound = true;
                             float viewX = listView.getX() + child.getX() + cell.getPhotoImage().getImageX();
                             float viewY = listView.getY() + child.getY() + cell.getPhotoImage().getImageY();
-                            Log.e("DEBUG_ANIMATION", "draw 3 x: " + viewX + " viewY: " + viewY);
 
                             if (drawingObject.isOut) {
                                 viewX += -cell.getPhotoImage().getImageWidth() * 2 + AndroidUtilities.dp(24);
@@ -242,40 +239,26 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                             drawingObject.lastY = viewY;
                             drawingObject.lastW = cell.getPhotoImage().getImageWidth();
 
-                            Log.e("DEBUG_ANIMATION", "draw 3.5 drawingObject.lastX: " + drawingObject.lastX + " drawingObject.lastY: " + drawingObject.lastY + " drawingObject.lastW: " + drawingObject.lastW);
-
                             break;
                         }
                     }
                 }
 
-//                Log.e("DEBUG_ANIMATION", "draw 4");
-
                 drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.randomOffsetX, drawingObject.lastY + drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
                 if (!drawingObject.isOut) {
-//                    Log.e("DEBUG_ANIMATION", "draw 5");
-
                     canvas.save();
                     canvas.scale(-1f, 1, drawingObject.imageReceiver.getCenterX(), drawingObject.imageReceiver.getCenterY());
                     drawingObject.imageReceiver.draw(canvas);
                     canvas.restore();
                 } else {
-//                    Log.e("DEBUG_ANIMATION", "draw 6");
-
                     drawingObject.imageReceiver.draw(canvas);
                 }
                 if (drawingObject.wasPlayed && drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().getCurrentFrame() == drawingObject.imageReceiver.getLottieAnimation().getFramesCount() - 2) {
-//                    Log.e("DEBUG_ANIMATION", "draw 7");
-
                     drawingObjects.remove(i);
                     i--;
                 } else if (drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().isRunning()) {
-//                    Log.e("DEBUG_ANIMATION", "draw 8");
-
                     drawingObject.wasPlayed = true;
                 } else if (drawingObject.imageReceiver.getLottieAnimation() != null && !drawingObject.imageReceiver.getLottieAnimation().isRunning()) {
-//                    Log.e("DEBUG_ANIMATION", "draw 9");
-
                     drawingObject.imageReceiver.getLottieAnimation().setCurrentFrame(0, true);
                     drawingObject.imageReceiver.getLottieAnimation().start();
                 }

@@ -861,7 +861,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
 
         if(ChatObject.hasAdminRights(currentChat)) {
-            infoContainer.addView(reactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            if(getMessagesController().availableReactions != null && getMessagesController().availableReactions.size() > 0) {
+                infoContainer.addView(reactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
         }
 
         if (!isChannel && !currentChat.gigagroup) {
@@ -893,11 +895,13 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             settingsTopSectionCell.setVisibility(View.GONE);
         }
 
-        if (ChatObject.canChangeChatInfo(currentChat) && !ChatObject.hasAdminRights(currentChat)) {
-            FrameLayout reactionsContainer = new FrameLayout(context);
-            reactionsContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            linearLayout1.addView(reactionsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            reactionsContainer.addView(reactionsCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        if(getMessagesController().availableReactions != null && getMessagesController().availableReactions.size() > 0) {
+            if (ChatObject.canChangeChatInfo(currentChat) && !ChatObject.hasAdminRights(currentChat)) {
+                FrameLayout reactionsContainer = new FrameLayout(context);
+                reactionsContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                linearLayout1.addView(reactionsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                reactionsContainer.addView(reactionsCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
         }
 
         if (!isChannel && info != null && info.can_set_stickers) {
@@ -1451,8 +1455,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                         memberRequestsCell.setTextAndValueAndIcon(LocaleController.getString("MemberRequests", R.string.MemberRequests), String.format("%d", info.requests_pending), R.drawable.actions_requests, logCell != null && logCell.getVisibility() == View.VISIBLE);
                     }
                 }
-                reactionsCell.setTextAndValueAndIcon(LocaleController.getString("ChannelReactions", R.string.ChannelReactions), reactionsCount > 0 ? String.format("%d/%d", reactionsCount, getMessagesController().availableReactions.size()) : "Off", R.drawable.actions_reactions, true);
-
+                if(getMessagesController().availableReactions != null) {
+                    reactionsCell.setTextAndValueAndIcon(LocaleController.getString("ChannelReactions", R.string.ChannelReactions), reactionsCount > 0 ? String.format("%d/%d", reactionsCount, getMessagesController().availableReactions.size()) : "Off", R.drawable.actions_reactions, true);
+                }
                 adminCell.setTextAndValueAndIcon(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators), String.format("%d", ChatObject.isChannel(currentChat) ? info.admins_count : getAdminCount()), R.drawable.actions_addadmin, true);
             } else {
                 if (isChannel) {

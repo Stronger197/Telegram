@@ -223,6 +223,9 @@ public class MessageObject {
         public float timeAlpha;
     }
 
+    public int getContentType() {
+        return contentType;
+    }
     public static class VCardData {
 
         private String company;

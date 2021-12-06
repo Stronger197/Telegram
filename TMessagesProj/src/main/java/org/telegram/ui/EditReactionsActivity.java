@@ -73,9 +73,9 @@ public class EditReactionsActivity extends BaseFragment implements NotificationC
         listViewAdapter = new ListAdapter(context);
 
 
-
-        Log.e("DEBUG_DATA", "currentChatReactions: " + info.available_reactions);
-        listViewAdapter.setData(getMessagesController().availableReactions, info.available_reactions);
+        if(getMessagesController().availableReactions != null) {
+            listViewAdapter.setData(getMessagesController().availableReactions, info.available_reactions);
+        }
 
         reactionsList.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
@@ -170,16 +170,10 @@ public class EditReactionsActivity extends BaseFragment implements NotificationC
             TLRPC.TL_availableReaction reaction = data.get(position);
 
             boolean isChecked = inCurrentChat.contains(reaction.reaction);
-            for(String currentChatRe : inCurrentChat) {
-                Log.e("DEBUG_DATA", "currentChatRe: " + currentChatRe);
-            }
-            Log.e("DEBUG_DATA", "toCheckContains: " + reaction.reaction);
-            Log.e("DEBUG_DATA", "result: " + isChecked);
             ((ReactionCheckCell) holder.itemView).setTextAndCheck(reaction.title, isChecked, true, reaction.static_icon, reaction.reaction);
             if(isChecked) {
                 checkedReactions.add(reaction.reaction);
             }
-            Log.e("DEBUG_ABCD", "asldkasd");
         }
 
         @Override

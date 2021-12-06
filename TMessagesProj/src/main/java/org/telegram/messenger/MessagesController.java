@@ -26,6 +26,7 @@ import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 
+import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -111,6 +112,19 @@ public class MessagesController extends BaseController implements NotificationCe
     public ArrayList<TLRPC.TL_availableReaction> availableReactions;
 
     private LongSparseArray<Boolean> loadingPeerSettings = new LongSparseArray<>();
+
+    @Nullable
+    public TLRPC.TL_availableReaction findAvailableReaction(String reaction) {
+        TLRPC.TL_availableReaction result = null;
+        if(availableReactions != null) {
+            for(TLRPC.TL_availableReaction availableReaction : availableReactions) {
+                if(availableReaction.reaction.equals(reaction)) {
+                    result = availableReaction;
+                }
+            }
+        }
+        return result;
+    }
 
     private ArrayList<Long> createdDialogIds = new ArrayList<>();
     private ArrayList<Long> createdScheduledDialogIds = new ArrayList<>();
@@ -5354,7 +5368,6 @@ public class MessagesController extends BaseController implements NotificationCe
         if (Math.abs(System.currentTimeMillis() - lastViewsCheckTime) >= 5000) {
             lastViewsCheckTime = System.currentTimeMillis();
 
-            Log.e("DEBUG_ABCD_E", "checkMEssages");
             if (channelViewsToSend.size() != 0) {
                 for (int a = 0; a < channelViewsToSend.size(); a++) {
                     long key = channelViewsToSend.keyAt(a);
@@ -13406,7 +13419,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         } else {
                             dialogId = update.peer.user_id;
                         }
-                        Log.e("DEBUG_ABCD", "updateReacitonmessagesController");
                         getNotificationCenter().postNotificationName(NotificationCenter.didUpdateReactions, dialogId, update.msg_id, update.reactions);
                     } else if (baseUpdate instanceof TLRPC.TL_updateTheme) {
                         TLRPC.TL_updateTheme update = (TLRPC.TL_updateTheme) baseUpdate;

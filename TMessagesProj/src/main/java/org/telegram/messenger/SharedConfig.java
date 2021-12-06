@@ -119,6 +119,7 @@ public class SharedConfig {
     public static int ivFontSize = 16;
     public static int messageSeenHintCount;
     public static int emojiInteractionsHintCount;
+    public static int reactionsInteractionsHintCount;
     public static int dayNightThemeSwitchHintCount;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
@@ -372,6 +373,7 @@ public class SharedConfig {
             chatSwipeAction = preferences.getInt("ChatSwipeAction", -1);
             messageSeenHintCount = preferences.getInt("messageSeenCount", 3);
             emojiInteractionsHintCount = preferences.getInt("emojiInteractionsHintCount", 3);
+            reactionsInteractionsHintCount = preferences.getInt("reactionInteractionsHintCount", 5);
             dayNightThemeSwitchHintCount = preferences.getInt("dayNightThemeSwitchHintCount", 3);
             mediaColumnsCount = preferences.getInt("mediaColumnsCount", 3);
             fastScrollHintCount = preferences.getInt("fastScrollHintCount", 3);
@@ -1104,6 +1106,12 @@ public class SharedConfig {
         emojiInteractionsHintCount = count;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         preferences.edit().putInt("emojiInteractionsHintCount", emojiInteractionsHintCount).apply();
+    }
+
+    public static void updateReactionsInteractionsHintCount(int count) {
+        reactionsInteractionsHintCount = count;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        preferences.edit().putInt("reactionInteractionsHintCount", reactionsInteractionsHintCount).apply();
     }
 
 

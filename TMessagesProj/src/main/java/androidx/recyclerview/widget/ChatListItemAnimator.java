@@ -1028,7 +1028,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             FileLog.d("all animations done");
         }
 
-        recyclerListView.setClipChildren(true);
         while (!runOnAnimationsEnd.isEmpty()) {
             runOnAnimationsEnd.remove(0).run();
         }

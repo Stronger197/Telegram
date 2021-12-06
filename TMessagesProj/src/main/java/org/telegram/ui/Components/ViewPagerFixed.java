@@ -19,6 +19,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.MotionEvent;
@@ -54,8 +55,8 @@ public class ViewPagerFixed extends FrameLayout {
 
     int currentPosition;
     int nextPosition;
-    private View[] viewPages;
-    private int[] viewTypes;
+    protected View[] viewPages;
+    protected int[] viewTypes;
 
     protected SparseArray<View> viewsByType = new SparseArray<>();
 
@@ -65,12 +66,12 @@ public class ViewPagerFixed extends FrameLayout {
     private VelocityTracker velocityTracker;
 
     private AnimatorSet tabsAnimation;
-    private boolean tabsAnimationInProgress;
-    private boolean animatingForward;
+    protected boolean tabsAnimationInProgress;
+    protected boolean animatingForward;
     private float additionalOffset;
     private boolean backAnimation;
     private int maximumVelocity;
-    private boolean startedTracking;
+    protected boolean startedTracking;
     private boolean maybeStartTracking;
     private static final Interpolator interpolator = t -> {
         --t;
@@ -80,7 +81,7 @@ public class ViewPagerFixed extends FrameLayout {
     private final float touchSlop;
 
     private Adapter adapter;
-    TabsView tabsView;
+    public TabsView tabsView;
 
     ValueAnimator.AnimatorUpdateListener updateTabProgress = new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -170,7 +171,7 @@ public class ViewPagerFixed extends FrameLayout {
         return tabsView;
     }
 
-    private void updateViewForIndex(int index) {
+    protected void updateViewForIndex(int index) {
         int adapterPosition = index == 0 ? currentPosition : nextPosition;
         if (viewPages[index] == null) {
             viewTypes[index] = adapter.getItemViewType(adapterPosition);
@@ -211,11 +212,11 @@ public class ViewPagerFixed extends FrameLayout {
         }
     }
 
-    private void fillTabs() {
+    protected void fillTabs() {
         if (adapter != null && tabsView != null) {
             tabsView.removeTabs();
             for (int i = 0; i < adapter.getItemCount(); i++) {
-                tabsView.addTab(adapter.getItemId(i), adapter.getItemTitle(i));
+                tabsView.addTab(adapter.getItemId(i), adapter.getItemTitle(i), adapter.getItemReaction(i), adapter.getReactionCount(i));
             }
         }
     }
@@ -463,7 +464,7 @@ public class ViewPagerFixed extends FrameLayout {
         return startedTracking || maybeStartTracking;
     }
 
-    private void swapViews() {
+    protected void swapViews() {
         View page = viewPages[0];
         viewPages[0] = viewPages[1];
         viewPages[1] = page;
@@ -538,6 +539,12 @@ public class ViewPagerFixed extends FrameLayout {
     }
 
     public abstract static class Adapter {
+        public TLRPC.TL_availableReaction getItemReaction(int position) {
+            return null;
+        }
+        public int getReactionCount(int position) {
+            return 0;
+        }
         public abstract int getItemCount();
         public abstract View createView(int viewType);
         public abstract void bindView(View view, int position, int viewType);
@@ -587,8 +594,10 @@ public class ViewPagerFixed extends FrameLayout {
             boolean canPerformActions();
         }
 
-        private static class Tab {
+        protected static class Tab {
             public int id;
+            public TLRPC.TL_availableReaction reaction;
+            public int reactionCount;
             public String title;
             public int titleWidth;
             public int counter;
@@ -772,23 +781,23 @@ public class ViewPagerFixed extends FrameLayout {
             }
         }
 
-        private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private TextPaint textCounterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private Paint deletePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private Paint counterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        protected TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        protected TextPaint textCounterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        protected Paint deletePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        protected Paint counterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        private ArrayList<Tab> tabs = new ArrayList<>();
+        protected ArrayList<Tab> tabs = new ArrayList<>();
 
         private Bitmap crossfadeBitmap;
-        private Paint crossfadePaint = new Paint();
+        protected Paint crossfadePaint = new Paint();
         private float crossfadeAlpha;
         private boolean commitCrossfade;
 
-        private boolean isEditing;
+        protected boolean isEditing;
         private long lastEditingAnimationTime;
         private boolean editingForwardAnimation;
-        private float editingAnimationProgress;
-        private float editingStartAnimationProgress;
+        protected float editingAnimationProgress;
+        protected float editingStartAnimationProgress;
 
         private boolean orderChanged;
 
@@ -801,24 +810,24 @@ public class ViewPagerFixed extends FrameLayout {
         private TabsViewDelegate delegate;
 
         private int currentPosition;
-        private int selectedTabId = -1;
+        protected int selectedTabId = -1;
         private int allTabsWidth;
 
-        private int additionalTabWidth;
+        protected int additionalTabWidth;
 
-        private boolean animatingIndicator;
-        private float animatingIndicatorProgress;
-        private int manualScrollingToPosition = -1;
-        private int manualScrollingToId = -1;
+        protected boolean animatingIndicator;
+        protected float animatingIndicatorProgress;
+        protected int manualScrollingToPosition = -1;
+        protected int manualScrollingToId = -1;
 
         private int scrollingToChild = -1;
         private GradientDrawable selectorDrawable;
 
-        private String tabLineColorKey = Theme.key_profile_tabSelectedLine;
-        private String activeTextColorKey = Theme.key_profile_tabSelectedText;
-        private String unactiveTextColorKey = Theme.key_profile_tabText;
-        private String selectorColorKey = Theme.key_profile_tabSelector;
-        private String backgroundColorKey = Theme.key_actionBarDefault;
+        protected String tabLineColorKey = Theme.key_profile_tabSelectedLine;
+        protected String activeTextColorKey = Theme.key_profile_tabSelectedText;
+        protected String unactiveTextColorKey = Theme.key_profile_tabText;
+        protected String selectorColorKey = Theme.key_profile_tabSelector;
+        protected String backgroundColorKey = Theme.key_actionBarDefault;
 
         private int prevLayoutWidth;
 
@@ -838,7 +847,7 @@ public class ViewPagerFixed extends FrameLayout {
         private long lastAnimationTime;
         private float animationTime;
         private int previousPosition;
-        private int previousId;
+        protected int previousId;
         private Runnable animationRunnable = new Runnable() {
             @Override
             public void run() {
@@ -958,7 +967,7 @@ public class ViewPagerFixed extends FrameLayout {
             listView.setPadding(AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7), 0);
             listView.setClipToPadding(false);
             listView.setDrawSelectorBehind(true);
-            listView.setAdapter(adapter = new ListAdapter(context));
+            listView.setAdapter(adapter = getAdapterForPages());
             listView.setOnItemClickListener((view, position, x, y) -> {
                 if (!delegate.canPerformActions()) {
                     return;
@@ -968,7 +977,7 @@ public class ViewPagerFixed extends FrameLayout {
                     delegate.onSamePageSelected();
                     return;
                 }
-                scrollToTab(tabView.currentTab.id, position);
+                scrollToTab(getTabId(tabView), position);
             });
             listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
@@ -977,6 +986,15 @@ public class ViewPagerFixed extends FrameLayout {
                 }
             });
             addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+
+
+        public int getTabId(TabView tabView) {
+            return tabView.currentTab.id;
+        }
+
+        public ListAdapter getAdapterForPages() {
+            return new ListAdapter(listView.getContext());
         }
 
         public void setDelegate(TabsViewDelegate filterTabsViewDelegate) {
@@ -1060,7 +1078,7 @@ public class ViewPagerFixed extends FrameLayout {
             return positionToId.get(currentPosition + (forward ? 1 : -1), -1);
         }
 
-        public void addTab(int id, String text) {
+        public void addTab(int id, String text, TLRPC.TL_availableReaction reaction, int reactionCount) {
             int position = tabs.size();
             if (position == 0 && selectedTabId == -1) {
                 selectedTabId = id;
@@ -1071,6 +1089,8 @@ public class ViewPagerFixed extends FrameLayout {
                 currentPosition = position;
             }
             Tab tab = new Tab(id, text);
+            tab.reaction = reaction;
+            tab.reactionCount = reactionCount;
             allTabsWidth += tab.getWidth(true, textPaint) + AndroidUtilities.dp(32);
             tabs.add(tab);
         }
@@ -1166,8 +1186,7 @@ public class ViewPagerFixed extends FrameLayout {
                     }
                 }
                 if (indicatorWidth != 0) {
-                    selectorDrawable.setBounds(indicatorX, (int) (height - AndroidUtilities.dpr(4) + hideProgress * AndroidUtilities.dpr(4)), indicatorX + indicatorWidth, (int) (height + hideProgress * AndroidUtilities.dpr(4)));
-                    selectorDrawable.draw(canvas);
+                    drawIndicator(indicatorX, height, indicatorWidth, canvas);
                 }
                 if (crossfadeBitmap != null) {
                     crossfadePaint.setAlpha((int) (crossfadeAlpha * 255));
@@ -1176,6 +1195,11 @@ public class ViewPagerFixed extends FrameLayout {
             }
 
             return result;
+        }
+
+        public void drawIndicator(int x, int height, int width, Canvas canvas) {
+            selectorDrawable.setBounds(x, (int) (height - AndroidUtilities.dpr(4) + hideProgress * AndroidUtilities.dpr(4)), x + width, (int) (height + hideProgress * AndroidUtilities.dpr(4)));
+            selectorDrawable.draw(canvas);
         }
 
         @Override
@@ -1349,7 +1373,7 @@ public class ViewPagerFixed extends FrameLayout {
             }
         }
 
-        private class ListAdapter extends RecyclerListView.SelectionAdapter {
+        protected class ListAdapter extends RecyclerListView.SelectionAdapter {
 
             private Context mContext;
 

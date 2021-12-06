@@ -192,7 +192,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private String currentImageFilter;
     private String currentImageKey;
     private int imageTag;
-    private Drawable currentImageDrawable;
+    public Drawable currentImageDrawable;
     private BitmapShader imageShader;
     private int imageOrientation;
 

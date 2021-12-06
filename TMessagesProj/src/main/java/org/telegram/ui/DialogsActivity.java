@@ -90,6 +90,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -1845,6 +1846,39 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     public static void loadDialogs(AccountInstance accountInstance) {
         int currentAccount = accountInstance.getCurrentAccount();
+
+        TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response != null) {
+                MessagesController.getInstance(currentAccount).availableReactions = ((TLRPC.TL_messages_availableReactions) response).reactions;
+
+
+                for(TLRPC.TL_availableReaction reactions : MessagesController.getInstance(currentAccount).availableReactions) {
+                    for(int i = 0; i < 4; i++) {
+                        TLRPC.Document document = null;
+
+                        String imageFilter = null;
+                        if(i == 0) {
+                            document = reactions.activate_animation;
+                        }
+                        if(i == 1) {
+                            document = reactions.effect_animation;
+                        }
+                        if(i == 2) {
+                            document = reactions.select_animation;
+                        }
+                        if(i == 3) {
+                            document = reactions.static_icon;
+                        }
+
+                        ImageReceiver imageReceiver = new ImageReceiver();
+                        imageReceiver.setImage(ImageLocation.getForDocument(document), null, null, null, null, 1);
+                    }
+
+                }
+            }
+        }));
+
         if (!dialogsLoaded[currentAccount]) {
             MessagesController messagesController = accountInstance.getMessagesController();
             messagesController.loadGlobalNotificationsSettings();

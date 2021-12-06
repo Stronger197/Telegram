@@ -11942,6 +11942,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentReactions = currentMessagesGroup.messages.get(0).messageOwner.reactions.results;
         }
 
+        if(
+            captionLayout == null &&
+            currentMessagesGroup != null &&
+            currentMessagesGroup.messages.size() > 1 &&
+            currentMessagesGroup.messages.get(0) == currentMessageObject
+        ) {
+            currentReactions = null;
+        }
 
         if(currentReactions != null && !currentReactions.isEmpty()) {
             for(TLRPC.TL_reactionCount reaction : currentReactions) {

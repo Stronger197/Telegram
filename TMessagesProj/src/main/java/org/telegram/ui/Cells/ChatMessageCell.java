@@ -3192,6 +3192,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         TLRPC.Message newReply = messageObject.hasValidReplyMessageObject() ? messageObject.replyMessageObject.messageOwner : null;
         boolean messageIdChanged = currentMessageObject == null || currentMessageObject.getId() != messageObject.getId();
         boolean messageChanged = currentMessageObject != messageObject || messageObject.forceUpdate || (isRoundVideo && isPlayingRound != (MediaController.getInstance().isPlayingMessage(currentMessageObject) && delegate != null && !delegate.keyboardIsOpened()));
+
+        if((currentMessageObject != null && currentMessageObject != messageObject) || messageObject.forceUpdate) {
+            MessagesController.getInstance(currentAccount).removeReactionsQueue(currentMessageObject);
+        }
+
+        MessagesController.getInstance(currentAccount).addReactionsQueue(messageObject);
+
         boolean dataChanged = currentMessageObject != null && currentMessageObject.getId() == messageObject.getId() && lastSendState == MessageObject.MESSAGE_SEND_STATE_EDITING && messageObject.isSent() ||
                 currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet) ||
                 lastPostAuthor != messageObject.messageOwner.post_author ||
@@ -6113,7 +6120,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if(groupedMessages.messages.get(groupedMessages.messages.size() - 1) == currentMessageObject) {
                             if(groupedMessages.messages.get(0).messageOwner.reactions != null && groupedMessages.messages.get(0).messageOwner.reactions.results != null) {
                                 currentReactions = groupedMessages.messages.get(0).messageOwner.reactions.results;
-                                
+
                                 measureReactions();
 
                                 currentReactions = null;
@@ -7875,7 +7882,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             canvas.translate(timeAudioX + songX, AndroidUtilities.dp(13) + namesOffset + mediaOffsetY);
             songLayout.draw(canvas);
             canvas.restore();
-            
+
             boolean showSeekbar = MediaController.getInstance().isPlayingMessage(currentMessageObject);
             if (showSeekbar && toSeekBarProgress != 1f) {
                 toSeekBarProgress += 16f / 100f;
@@ -10049,7 +10056,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (!currentMessageObject.reactionsReloaded) {
-            MessagesController.getInstance(currentAccount).addReactionsQueue(currentMessageObject);
+//            MessagesController.getInstance(currentAccount).addReactionsQueue(currentMessageObject);
             currentMessageObject.reactionsReloaded = true;
         }
 
@@ -15621,7 +15628,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
         return paint != null ? paint : Theme.getThemePaint(paintKey);
     }
-    
+
     private boolean hasGradientService() {
         return resourcesProvider != null ? resourcesProvider.hasGradientService() : Theme.hasGradientService();
     }

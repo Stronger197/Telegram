@@ -8537,6 +8537,26 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
+    public void removeReactionsQueue(MessageObject messageObject) {
+        Utilities.stageQueue.postRunnable(() -> {
+            long peer = messageObject.getDialogId();
+            int id = messageObject.getId();
+            ArrayList<Integer> ids = reactionsToCheck.get(peer);
+            if(ids != null && ids.contains(id)) {
+                ids.remove(ids.indexOf(id));
+            }
+        });
+    }
+
+    public void removeReactionsQueue(long peer) {
+        Utilities.stageQueue.postRunnable(() -> {
+            if(reactionsToCheck != null && reactionsToCheck.containsKey(peer)) {
+                reactionsToCheck.remove(peer);
+            }
+        });
+    }
+
+
     public void addToPollsQueue(long dialogId, ArrayList<MessageObject> visibleObjects) {
         SparseArray<MessageObject> array = pollsToCheck.get(dialogId);
         if (array == null) {

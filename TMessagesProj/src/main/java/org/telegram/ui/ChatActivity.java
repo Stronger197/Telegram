@@ -1921,6 +1921,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        getMessagesController().removeReactionsQueue(dialog_id);
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();
         }

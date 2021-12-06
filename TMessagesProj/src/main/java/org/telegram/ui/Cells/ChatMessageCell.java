@@ -6074,7 +6074,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             botButtonsByData.put(key, botButton);
                             botButtonsByPosition.put(position, botButton);
                             botButton.x = b * (buttonWidth + AndroidUtilities.dp(5));
-                            botButton.y = a * AndroidUtilities.dp(44 + 4) + AndroidUtilities.dp(5);
+                            int addedHeight = 0;
+                            if(captionLayout == null && (currentMessageObject.isPhoto() || currentMessageObject.isVideo() || currentMessageObject.isGif()) && !currentMessageObject.isWebpage()) {
+                                addedHeight = reactionsHeight;
+                            }
+                            botButton.y = a * AndroidUtilities.dp(44 + 4) + AndroidUtilities.dp(5) + addedHeight;
                             botButton.width = buttonWidth;
                             botButton.height = AndroidUtilities.dp(44);
                             CharSequence buttonText;

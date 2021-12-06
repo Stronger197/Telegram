@@ -38,6 +38,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ReactionsPlaceholderDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -367,7 +368,11 @@ public class ReactionsSeenView extends FrameLayout {
 
 
                 if(usersAndReactions.get(0).reaction != null) {
-                    singleReactionImage.setImage(ImageLocation.getForDocument(usersAndReactions.get(0).reaction.static_icon), "50_50", new BitmapDrawable(), null);
+
+                    ReactionsPlaceholderDrawable reactionsPlaceholderDrawable = new ReactionsPlaceholderDrawable();
+                    reactionsPlaceholderDrawable.setBounds(singleReactionImage.getLeft(), singleReactionImage.getTop(), singleReactionImage.getRight(), singleReactionImage.getBottom());
+
+                    singleReactionImage.setImage(ImageLocation.getForDocument(usersAndReactions.get(0).reaction.static_icon), null, reactionsPlaceholderDrawable, null);
                     singleReactionImage.setVisibility(View.VISIBLE);
                 }
 

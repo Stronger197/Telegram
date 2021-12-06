@@ -20716,7 +20716,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     }
 
-                    scrimPopupWindow.dismiss();
+                    if(scrimPopupWindow != null) {
+                        scrimPopupWindow.dismiss();
+                    }
 
                     int count = chatListView.getChildCount();
                     ChatMessageCell currentCell = null;
@@ -20784,7 +20786,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 });
                 Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.reactionsbubble).mutate();
-                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
                 reactionsView.setBackground(shadowDrawable2);
 
                 ArrayList<TLRPC.TL_availableReaction> reactions = new ArrayList();
@@ -20807,6 +20809,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 boolean showReactions = currentEncryptedChat == null && !reactions.isEmpty() && message.isSent() && !message.isEditing() && !message.isSending() && !message.isSendError() && !message.isSponsored() && message.getContentType() != 1;
 
+                if(currentUser != null && currentUser.self) {
+                    showReactions = false;
+                }
                 if(showReactions) {
                     scrimPopupContainerLayout.addView(
                         reactionsView,

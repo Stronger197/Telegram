@@ -120,7 +120,7 @@ import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.GradientClip;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Components.ShowDrawable;
 import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarGiftUniqueActionLayout;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -609,7 +609,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (messageObject.actionDeleteGroupEventId != -1) {
             ScaleStateListAnimator.apply(this, .02f, 1.2f);
             overriddenMaxWidth = Math.max(dp(250), HintView2.cutInFancyHalf(messageObject.messageText, (TextPaint) getThemedPaint(Theme.key_paint_chatActionText)));
-            ProfileActivity.ShowDrawable showDrawable = ChannelAdminLogActivity.findDrawable(messageObject.messageText);
+            ShowDrawable showDrawable = ChannelAdminLogActivity.findDrawable(messageObject.messageText);
             if (showDrawable != null) {
                 showDrawable.setView(this);
             }

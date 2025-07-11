@@ -37,7 +37,6 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.PinchToZoomHelper;
-import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 
@@ -265,7 +264,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         imagesLayerNum = value;
     }
 
-    public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, ProfileActivity.AvatarImageView parentAvatarImageView, int parentClassGuid, Callback callback) {
+    public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, org.telegram.ui.Components.AvatarImageView parentAvatarImageView, int parentClassGuid, Callback callback) {
         super(context);
         setVisibility(View.GONE);
         setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -496,7 +495,16 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         boolean result = false;
 
         if (isScrollingListView) {
-            result = parentListView.onTouchEvent(ev);
+            if(isProfileFragment) {
+                // Need to pass raw data because of resize of view
+                MotionEvent copy = MotionEvent.obtain(ev);
+                copy.setLocation(ev.getRawX(), ev.getRawY());
+                result = parentListView.dispatchTouchEvent(copy);
+                copy.recycle();
+            } else {
+                // Old logic for old screens
+                result = parentListView.onTouchEvent(ev);
+            }
         }
 
         if (isSwipingViewPager) {
@@ -1090,7 +1098,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         private BackupImageView parentAvatarImageView;
         private final ActionBar parentActionBar;
 
-        public ViewPagerAdapter(Context context, ProfileActivity.AvatarImageView parentAvatarImageView, ActionBar parentActionBar) {
+        public ViewPagerAdapter(Context context, org.telegram.ui.Components.AvatarImageView parentAvatarImageView, ActionBar parentActionBar) {
             this.context = context;
             this.parentAvatarImageView = parentAvatarImageView;
             this.parentActionBar = parentActionBar;

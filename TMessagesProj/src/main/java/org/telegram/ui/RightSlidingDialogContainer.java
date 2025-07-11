@@ -33,7 +33,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public abstract class RightSlidingDialogContainer extends FrameLayout {
 
-    BaseFragment currentFragment;
+    public BaseFragment currentFragment;
     View currentFragmentView;
     View currentFragmentFullscreenView;
     ActionBar currentActionBarView;

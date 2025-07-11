@@ -136,6 +136,9 @@ public class DrawerLayoutContainer extends FrameLayout {
                     hasCutout = cutout != null && cutout.getBoundingRects().size() != 0;
                 }
                 invalidate();
+
+                AndroidUtilities.onRootWindowInsetsChangeListener(insets);
+
                 if (Build.VERSION.SDK_INT >= 30) {
                     return WindowInsets.CONSUMED;
                 } else {

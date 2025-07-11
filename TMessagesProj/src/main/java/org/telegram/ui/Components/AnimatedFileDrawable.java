@@ -162,6 +162,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     private View parentView;
     private final ArrayList<View> secondParentViews = new ArrayList<>();
+    private AnimationFrameUpdateListener frameUpdateListener;
 
     private final ArrayList<ImageReceiver> parents = new ArrayList<>();
 
@@ -342,6 +343,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 }
             }
             invalidateInternal();
+            if (frameUpdateListener != null) {
+                frameUpdateListener.onAnimationFrameUpdated();
+            }
             scheduleNextGetFrame();
         }
     };
@@ -581,6 +585,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         parentView = view;
     }
 
+    public void setFrameUpdateListener(AnimationFrameUpdateListener listener) {
+        this.frameUpdateListener = listener;
+    }
+
+    public void clearFrameUpdateListener() {
+        this.frameUpdateListener = null;
+    }
+
     public void addParent(ImageReceiver imageReceiver) {
         if (imageReceiver != null && !parents.contains(imageReceiver)) {
             parents.add(imageReceiver);
@@ -689,6 +701,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         }
         isRunning = false;
         isRecycled = true;
+        frameUpdateListener = null;
         if (cacheGenRunnable != null) {
             BitmapsCache.decrementTaskCounter();
             RLottieDrawable.lottieCacheGenerateQueue.cancelRunnable(cacheGenRunnable);

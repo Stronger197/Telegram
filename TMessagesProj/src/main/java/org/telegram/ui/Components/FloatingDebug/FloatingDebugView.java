@@ -58,7 +58,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -536,7 +535,7 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, finalThemeInfo, true, null, -1);
             }, 200);
         }));
-        items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugSendLogs), () -> ProfileActivity.sendLogs((Activity) getContext(), false)));
+        items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugSendLogs), () -> AndroidUtilities.sendLogs((Activity) getContext(), false)));
         return items;
     }
 

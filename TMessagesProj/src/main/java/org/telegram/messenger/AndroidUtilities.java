@@ -46,6 +46,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -114,6 +116,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -212,6 +215,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -224,6 +228,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class AndroidUtilities {
     public final static int LIGHT_STATUS_BAR_OVERLAY = 0x0f000000, DARK_STATUS_BAR_OVERLAY = 0x33000000;
@@ -309,6 +315,31 @@ public class AndroidUtilities {
     public static Pattern REMOVE_MULTIPLE_DIACRITICS = null;
     public static Pattern REMOVE_RTL = null;
     private static Pattern singleTagPatter = null;
+    private static WindowInsets rootWindowInsets = null;
+    private static Set<OnRootWindowInsetsChangeListener> rootWindowInsetsListeners = new HashSet<OnRootWindowInsetsChangeListener>();
+
+    public interface OnRootWindowInsetsChangeListener {
+        void onChanged(WindowInsets insets);
+    }
+
+    public static void addOnRootWindowInsetsChangeListener(OnRootWindowInsetsChangeListener listener) {
+        rootWindowInsetsListeners.add(listener);
+    }
+
+    public static void removeOnRootWindowInsetsChangeListener(OnRootWindowInsetsChangeListener listener) {
+        rootWindowInsetsListeners.remove(listener);
+    }
+
+    public static WindowInsets getRootWindowInsets() {
+        return rootWindowInsets;
+    }
+
+    public static void onRootWindowInsetsChangeListener(WindowInsets insets) {
+        rootWindowInsets = insets;
+        for (OnRootWindowInsetsChangeListener listener: rootWindowInsetsListeners) {
+            listener.onChanged(insets);
+        }
+    }
 
     public static String removeDiacritics(String str) {
         if (str == null) return null;
@@ -5019,6 +5050,25 @@ public class AndroidUtilities {
         return a + f * (b - a);
     }
 
+    public static float lerpClamp(float a, float b, float c) {
+        return clamp(
+                lerp(a, b, c),
+                a,
+                b
+        );
+    }
+
+    public static float clamp(float value, float min, float max) {
+        // На случай, если min > max, меняем их местами
+        if (min > max) {
+            float tmp = min;
+            min = max;
+            max = tmp;
+        }
+        // Сначала берём не больше max, а потом — не меньше min
+        return Math.max(min, Math.min(max, value));
+    }
+
     public static float lerp(boolean a, boolean b, float f) {
         return (a ? 1.0f : 0.0f) + f * ((b ? 1.0f : 0.0f) - (a ? 1.0f : 0.0f));
     }
@@ -5126,6 +5176,22 @@ public class AndroidUtilities {
 
     public static float ilerp(float x, float a, float b) {
         return (x - a) / (b - a);
+    }
+
+    public static float ilerpClamp(int a, int b, int c) {
+        return clamp(
+                ilerp(a, b, c),
+                0f,
+                1f
+        );
+    }
+
+    public static float ilerpClamp(float a, float b, float c) {
+        return clamp(
+                ilerp(a, b, c),
+                0f,
+                1f
+        );
     }
 
     public static void scaleRect(RectF rect, float scale) {
@@ -6643,5 +6709,204 @@ public class AndroidUtilities {
 
         FileLog.d("[FLAG_SECURE]");
         printStackTrace("FLAG_SECURE");
+    }
+
+    public static void sendLogs(Activity activity, boolean last) {
+        if (activity == null) {
+            return;
+        }
+        AlertDialog progressDialog = new AlertDialog(activity, AlertDialog.ALERT_TYPE_SPINNER);
+        progressDialog.setCanCancel(false);
+        progressDialog.show();
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                File dir = AndroidUtilities.getLogsDir();
+                if (dir == null) {
+                    AndroidUtilities.runOnUIThread(progressDialog::dismiss);
+                    return;
+                }
+
+                File zipFile = new File(dir, "logs.zip");
+                if (zipFile.exists()) {
+                    zipFile.delete();
+                }
+
+                ArrayList<File> files = new ArrayList<>();
+
+                File[] logFiles = dir.listFiles();
+                for (File f : logFiles) {
+                    files.add(f);
+                }
+
+                File filesDir = ApplicationLoader.getFilesDirFixed();
+                filesDir = new File(filesDir, "malformed_database/");
+                if (filesDir.exists() && filesDir.isDirectory()) {
+                    File[] malformedDatabaseFiles = filesDir.listFiles();
+                    for (File file : malformedDatabaseFiles) {
+                        files.add(file);
+                    }
+                }
+
+                boolean[] finished = new boolean[1];
+                long currentDate = System.currentTimeMillis();
+
+                BufferedInputStream origin = null;
+                ZipOutputStream out = null;
+                try {
+                    FileOutputStream dest = new FileOutputStream(zipFile);
+                    out = new ZipOutputStream(new BufferedOutputStream(dest));
+                    byte[] data = new byte[1024 * 64];
+
+                    for (int i = 0; i < files.size(); i++) {
+                        File file = files.get(i);
+                        if (!file.getName().contains("cache4") && (last || file.getName().contains("_mtproto")) && (currentDate - file.lastModified()) > 24 * 60 * 60 * 1000) {
+                            continue;
+                        }
+                        if (!file.exists()) {
+                            continue;
+                        }
+                        FileInputStream fi = new FileInputStream(file);
+                        origin = new BufferedInputStream(fi, data.length);
+
+                        ZipEntry entry = new ZipEntry(file.getName());
+                        out.putNextEntry(entry);
+                        int count;
+                        while ((count = origin.read(data, 0, data.length)) != -1) {
+                            out.write(data, 0, count);
+                        }
+                        origin.close();
+                        origin = null;
+                    }
+                    finished[0] = true;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (origin != null) {
+                        origin.close();
+                    }
+                    if (out != null) {
+                        out.close();
+                    }
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception ignore) {
+
+                    }
+                    if (finished[0]) {
+                        Uri uri;
+                        if (Build.VERSION.SDK_INT >= 24) {
+                            uri = FileProvider.getUriForFile(activity, ApplicationLoader.getApplicationId() + ".provider", zipFile);
+                        } else {
+                            uri = Uri.fromFile(zipFile);
+                        }
+
+                        Intent i = new Intent(Intent.ACTION_SEND);
+                        if (Build.VERSION.SDK_INT >= 24) {
+                            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
+                        i.setType("message/rfc822");
+                        i.putExtra(Intent.EXTRA_EMAIL, "");
+                        i.putExtra(Intent.EXTRA_SUBJECT, "Logs from " + LocaleController.getInstance().getFormatterStats().format(System.currentTimeMillis()));
+                        i.putExtra(Intent.EXTRA_STREAM, uri);
+                        if (activity != null) {
+                            try {
+                                activity.startActivityForResult(Intent.createChooser(i, "Select email application."), 500);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    } else {
+                        if (activity != null) {
+                            Toast.makeText(activity, LocaleController.getString(R.string.ErrorOccurred), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public static void listCodecs(String type, StringBuilder info) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) { // Только для Android 6.0 и выше
+            return;
+        }
+        try {
+            final int allCodecsCount = MediaCodecList.getCodecCount(); // Общее количество кодеков
+            final ArrayList<Integer> decoderIndexes = new ArrayList<>(); // Индексы декодеров
+            final ArrayList<Integer> encoderIndexes = new ArrayList<>(); // Индексы энкодеров
+            boolean first = true;
+            // Перебираем все кодеки
+            for (int i = 0; i < allCodecsCount; ++i) {
+                MediaCodecInfo codec = MediaCodecList.getCodecInfoAt(i);
+                if (codec == null) {
+                    continue;
+                }
+                String[] types = codec.getSupportedTypes(); // Получаем поддерживаемые типы
+                if (types == null) {
+                    continue;
+                }
+                boolean found = false;
+                // Проверяем, поддерживает ли кодек указанный тип
+                for (int j = 0; j < types.length; ++j) {
+                    if (types[j].equals(type)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) { // Если поддерживает, добавляем в соответствующий список
+                    (codec.isEncoder() ? encoderIndexes : decoderIndexes).add(i);
+                }
+            }
+            if (decoderIndexes.isEmpty() && encoderIndexes.isEmpty()) { // Если кодеков не найдено, выходим
+                return;
+            }
+            // Формируем строку с информацией о кодеках
+            info.append("\n").append(decoderIndexes.size()).append("+").append(encoderIndexes.size()).append(" ").append(type.substring(6)).append(" codecs:\n");
+            for (int a = 0; a < decoderIndexes.size(); ++a) { // Декодеры
+                if (a > 0) {
+                    info.append("\n");
+                }
+                MediaCodecInfo codec = MediaCodecList.getCodecInfoAt(decoderIndexes.get(a));
+                info.append("{d} ").append(codec.getName()).append(" (");
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) { // Для Android 10 и выше
+                    if (codec.isHardwareAccelerated()) {
+                        info.append("gpu"); // Аппаратный
+                    }
+                    if (codec.isSoftwareOnly()) {
+                        info.append("cpu"); // Программный
+                    }
+                    if (codec.isVendor()) {
+                        info.append(", v"); // Вендорский
+                    }
+                }
+                MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(type);
+                info.append("; mi=").append(capabilities.getMaxSupportedInstances()).append(")"); // Максимальное количество экземпляров
+            }
+            for (int a = 0; a < encoderIndexes.size(); ++a) { // Энкодеры
+                if (a > 0 || !decoderIndexes.isEmpty()) {
+                    info.append("\n");
+                }
+                MediaCodecInfo codec = MediaCodecList.getCodecInfoAt(encoderIndexes.get(a));
+                info.append("{e} ").append(codec.getName()).append(" (");
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    if (codec.isHardwareAccelerated()) {
+                        info.append("gpu");
+                    }
+                    if (codec.isSoftwareOnly()) {
+                        info.append("cpu");
+                    }
+                    if (codec.isVendor()) {
+                        info.append(", v");
+                    }
+                }
+                MediaCodecInfo.CodecCapabilities capabilities = codec.getCapabilitiesForType(type);
+                info.append("; mi=").append(capabilities.getMaxSupportedInstances()).append(")");
+            }
+            info.append("\n");
+        } catch (Exception ignore) {} // Игнорируем возможные исключения
     }
 }

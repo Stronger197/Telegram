@@ -146,6 +146,7 @@ import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.Components.ShowDrawable;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -674,9 +675,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         }).filter(s -> s != null).limit(4).toArray());
         SpannableStringBuilder ssb = new SpannableStringBuilder(replaceWithLink(LocaleController.formatPluralString(expandable ? "EventLogDeletedMultipleMessagesToExpand" : "EventLogDeletedMultipleMessages", messages.size(), names), "un1", user));
         if (expandable && messages.size() > 1) {
-            ProfileActivity.ShowDrawable drawable = findDrawable(messageObject.messageText);
+            ShowDrawable drawable = findDrawable(messageObject.messageText);
             if (drawable == null) {
-                drawable = new ProfileActivity.ShowDrawable(getString(expanded ? R.string.EventLogDeletedMultipleMessagesHide : R.string.EventLogDeletedMultipleMessagesShow));
+                drawable = new ShowDrawable(getString(expanded ? R.string.EventLogDeletedMultipleMessagesHide : R.string.EventLogDeletedMultipleMessagesShow));
                 drawable.textDrawable.setTypeface(AndroidUtilities.bold());
                 drawable.textDrawable.setTextSize(dp(10));
                 drawable.setTextColor(Color.WHITE);
@@ -698,12 +699,12 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         return messageObject;
     }
 
-    public static ProfileActivity.ShowDrawable findDrawable(CharSequence messageText) {
+    public static ShowDrawable findDrawable(CharSequence messageText) {
         if (messageText instanceof Spannable) {
             ColoredImageSpan[] spans = ((Spannable) messageText).getSpans(0, messageText.length(), ColoredImageSpan.class);
             for (int i = 0; i < spans.length; ++i) {
-                if (spans[i] != null && spans[i].drawable instanceof ProfileActivity.ShowDrawable) {
-                    return (ProfileActivity.ShowDrawable) spans[i].drawable;
+                if (spans[i] != null && spans[i].drawable instanceof ShowDrawable) {
+                    return (ShowDrawable) spans[i].drawable;
                 }
             }
         }

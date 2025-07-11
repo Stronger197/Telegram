@@ -3414,20 +3414,16 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         } else if (id == open_in) {
             try {
                 if (parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2) {
-                    Intent videoPickerIntent = new Intent();
-                    videoPickerIntent.setType("video/*");
-                    videoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
-                    videoPickerIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, FileLoader.DEFAULT_MAX_FILE_SIZE);
-
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("image/*");
-                    Intent chooserIntent = Intent.createChooser(photoPickerIntent, null);
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{videoPickerIntent});
+                    Intent pickMedia = new Intent(Intent.ACTION_GET_CONTENT);
+                    pickMedia.addCategory(Intent.CATEGORY_OPENABLE);
+                    pickMedia.setType("*/*");
+                    pickMedia.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+                    pickMedia.putExtra(MediaStore.EXTRA_SIZE_LIMIT, FileLoader.DEFAULT_MAX_FILE_SIZE);
 
                     if (parentAlert.avatarPicker != 0) {
-                        parentAlert.baseFragment.startActivityForResult(chooserIntent, 14);
+                        parentAlert.baseFragment.startActivityForResult(pickMedia, 14);
                     } else {
-                        parentAlert.baseFragment.startActivityForResult(chooserIntent, 1);
+                        parentAlert.baseFragment.startActivityForResult(pickMedia, 1);
                     }
                 } else {
                     Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);

@@ -1074,6 +1074,9 @@ public class AnimatedEmojiDrawable extends Drawable {
         boolean attached;
         private Theme.ResourcesProvider resourcesProvider;
 
+        private float scale = 1.0f;
+        private boolean canBeScaled;
+
         public SwapAnimatedEmojiDrawable(View parentView, int size) {
             this(parentView, false, size, CACHE_TYPE_EMOJI_STATUS);
         }
@@ -1113,6 +1116,28 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         private boolean hasParticles;
         private StarsReactionsSheet.Particles particles;
+
+        public void setScale(float scale) {
+            if(canBeScaled) {
+                this.scale = scale;
+            }
+        }
+
+        public float getScale() {
+            return scale;
+        }
+
+        public void setCanBeScaled(boolean canBeScaled) {
+            this.canBeScaled = canBeScaled;
+            if(!canBeScaled) {
+                scale = 1f;
+            }
+        }
+
+        public boolean getCanBeScaled() {
+            return canBeScaled;
+        }
+
         public void setParticles(boolean show, boolean animated) {
             if (hasParticles == show) return;
             if (animated) {
@@ -1197,8 +1222,9 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
             if (drawables[0] != null) {
                 canvas.save();
-                int dw = drawables[0].getIntrinsicWidth() < 0 ? getIntrinsicWidth() : drawables[0].getIntrinsicWidth();
-                int dh = drawables[0].getIntrinsicHeight() < 0 ? getIntrinsicHeight() : drawables[0].getIntrinsicHeight();
+                int dw = drawables[0].getIntrinsicWidth() < 0 ? (int) (getIntrinsicWidth() * scale) : (int) (drawables[0].getIntrinsicWidth() * scale);
+                int dh = drawables[0].getIntrinsicHeight() < 0 ? (int) (getIntrinsicHeight() * scale) : (int) (drawables[0].getIntrinsicHeight() * scale);
+
                 if (drawables[0] instanceof AnimatedEmojiDrawable) {
                     if (((AnimatedEmojiDrawable) drawables[0]).imageReceiver != null) {
                         ((AnimatedEmojiDrawable) drawables[0]).imageReceiver.setRoundRadius(AndroidUtilities.dp(4));
@@ -1414,12 +1440,12 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         @Override
         public int getIntrinsicWidth() {
-            return size;
+            return drawables[0] == null || drawables[0].getIntrinsicWidth() < 0 ? size : drawables[0].getIntrinsicWidth();
         }
 
         @Override
         public int getIntrinsicHeight() {
-            return size;
+            return drawables[0] == null || drawables[0].getIntrinsicHeight() < 0 ? size : drawables[0].getIntrinsicHeight();
         }
 
         @Override

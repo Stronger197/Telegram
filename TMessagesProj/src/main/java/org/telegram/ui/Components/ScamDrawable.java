@@ -23,6 +23,8 @@ public class ScamDrawable extends Drawable {
     private int currentType;
     int colorAlpha = 255;
     int alpha = 255;
+    private int extraWidth = AndroidUtilities.dp(5 * 2);
+    private int extraTopPadding = AndroidUtilities.dp(12);
 
     public ScamDrawable(int textSize, int type) {
         super();
@@ -39,6 +41,14 @@ public class ScamDrawable extends Drawable {
             text = LocaleController.getString(R.string.FakeMessage);
         }
         textWidth = (int) Math.ceil(textPaint.measureText(text));
+    }
+
+    public void setExtraWidth(int sizePx) {
+        extraWidth = sizePx;
+    }
+
+    public void setExtraTopPadding(int sizePx) {
+        extraTopPadding = sizePx;
     }
 
     public void checkText() {
@@ -71,7 +81,7 @@ public class ScamDrawable extends Drawable {
 
     @Override
     public int getIntrinsicWidth() {
-        return textWidth + AndroidUtilities.dp(5 * 2);
+        return textWidth + extraWidth;
     }
 
     @Override
@@ -83,7 +93,7 @@ public class ScamDrawable extends Drawable {
     public void draw(Canvas canvas) {
         rect.set(getBounds());
         canvas.drawRoundRect(rect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), paint);
-        canvas.drawText(text, rect.left + AndroidUtilities.dp(5), rect.top + AndroidUtilities.dp(12), textPaint);
+        canvas.drawText(text, rect.left + AndroidUtilities.dp(5), rect.top + extraTopPadding, textPaint);
     }
 
     @Override

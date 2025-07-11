@@ -32,7 +32,6 @@ import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -48,6 +47,7 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RadialProgress;
+import org.telegram.ui.Components.AvatarImageView;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
@@ -56,7 +56,10 @@ import java.util.List;
 
 public class ProfileStoriesView extends View implements NotificationCenter.NotificationCenterDelegate {
 
+    private final ProfileActivity profileActivity;
+
     private static final int CIRCLES_MAX = 3;
+    private static final int CIRCLE_PADDING = AndroidUtilities.dp(2f);
     public static final String FRAGMENT_TRANSITION_PROPERTY = "fragmentTransitionProgress";
 
     private int readPaintAlpha;
@@ -67,7 +70,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
     private final long dialogId;
     private final boolean isTopic;
     private final View avatarContainer;
-    private final ProfileActivity.AvatarImageView avatarImage;
+    private final AvatarImageView avatarImage;
 
     private final AnimatedTextView.AnimatedTextDrawable titleDrawable = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
 
@@ -84,6 +87,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
     private RadialProgress radialProgress;
     private boolean progressWasDrawn;
     private boolean progressIsDone;
+    private boolean showThumbnails = false; // need to show small icons when avatar expanded
     private float bounceScale = 1f;
     private float progressToInsets = 1f;
     private float fragmentTransitionProgress;
@@ -99,6 +103,20 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         invalidate();
     }
 
+    public void setShowThumbnails(boolean show) {
+        if (this.showThumbnails == show) {
+            return;
+        }
+        this.showThumbnails = show;
+        for (int i = 0; i < circles.size(); i++) {
+            circles.get(i).imageReceiver.setVisible(show, false);
+        }
+        if (!show) {
+            progressWasDrawn = false;
+        }
+        invalidate();
+    }
+
     private class StoryCircle {
         public StoryCircle(TL_stories.StoryItem storyItem) {
             this.storyId = storyItem.id;
@@ -108,6 +126,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
                 this.imageReceiver.onAttachedToWindow();
             }
             StoriesUtilities.setThumbImage(this.imageReceiver, storyItem, 25, 25);
+            this.imageReceiver.setVisible(showThumbnails, false);
         }
 
         int storyId;
@@ -142,8 +161,9 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
 
     StoriesController storiesController;
 
-    public ProfileStoriesView(Context context, int currentAccount, long dialogId, boolean isTopic, @NonNull View avatarContainer, ProfileActivity.AvatarImageView avatarImage, Theme.ResourcesProvider resourcesProvider) {
+    public ProfileStoriesView(ProfileActivity profileActivity, Context context, int currentAccount, long dialogId, boolean isTopic, @NonNull View avatarContainer, AvatarImageView avatarImage, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.profileActivity = profileActivity;
 
         this.currentAccount = currentAccount;
         this.dialogId = dialogId;
@@ -489,11 +509,15 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         float avatarPullProgress = Utilities.clamp((avatarContainer.getScaleX() - 1f) / 0.4f, 1f, 0f);
         float insetMain = AndroidUtilities.lerp(AndroidUtilities.dpf2(4f), AndroidUtilities.dpf2(3.5f), avatarPullProgress);
         insetMain *= progressToInsets;
-        float ax = avatarContainer.getX() + insetMain * avatarContainer.getScaleX();
-        float ay = avatarContainer.getY() + insetMain * avatarContainer.getScaleY();
-        float aw = (avatarContainer.getWidth() - insetMain * 2) * avatarContainer.getScaleX();
-        float ah = (avatarContainer.getHeight() - insetMain * 2) * avatarContainer.getScaleY();
-        rect1.set(ax, ay, ax + aw, ay + ah);
+        float ax = avatarContainer.getX()
+                - avatarContainer.getPivotX() * (avatarContainer.getScaleX() - 1f)
+                + insetMain * avatarContainer.getScaleX();
+        float ay = avatarContainer.getY()
+                - avatarContainer.getPivotY() * (avatarContainer.getScaleY() - 1f)
+                + insetMain * avatarContainer.getScaleY();
+        float aw = avatarContainer.getWidth() * avatarContainer.getScaleX() - insetMain * 2 * avatarContainer.getScaleX();
+        float ah = avatarContainer.getHeight() * avatarContainer.getScaleY() - insetMain * 2 * avatarContainer.getScaleY();
+        rect1.set(ax - CIRCLE_PADDING, ay - CIRCLE_PADDING, ax + aw + CIRCLE_PADDING, ay + ah + CIRCLE_PADDING);
 
         float maxX = this.left;
         boolean needsSort = false;
@@ -595,7 +619,9 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
                 paint.setAlpha((int) (255 * segmentsAlpha));
                 boolean isForum = ChatObject.isForum(UserConfig.selectedAccount, dialogId);
                 if (isForum) {
-                    float r = rect2.height() * 0.32f;
+                    float r = avatarImage != null
+                            ? avatarImage.getRoundRadius()[0] * avatarContainer.getScaleX() + CIRCLE_PADDING
+                            : rect2.height() * 0.32f;
                     canvas.drawRoundRect(rect2, r, r, paint);
                 } else {
                     canvas.drawCircle(rect2.centerX(), rect2.centerY(), rect2.width() / 2f, paint);
@@ -663,7 +689,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         }
 
         final float expandRight = getExpandRight();
-        if (expandProgress > 0 && segmentsAlpha < 1) {
+        if (showThumbnails && expandProgress > 0 && segmentsAlpha < 1) {
             float ix = 0;
             w = 0;
             for (int i = 0; i < circles.size(); ++i) {
@@ -746,7 +772,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
             canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * expandProgress * (1f - segmentsAlpha)), Canvas.ALL_SAVE_FLAG);
             for (int i = circles.size() - 1; i >= 0; i--) {
                 StoryCircle circle = circles.get(i);
-                if (!circle.imageReceiver.getVisible()) {
+                if (!showThumbnails || !circle.imageReceiver.getVisible()) {
                     continue;
                 }
                 int r = canvas.getSaveCount();
@@ -851,7 +877,9 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
     private void drawArc(Canvas canvas, RectF oval, float startAngle, float sweepAngle, boolean useCenter, Paint paint) {
         boolean isForum = ChatObject.isForum(UserConfig.selectedAccount, dialogId);
         if (isForum) {
-            float r = oval.height() * 0.32f;
+            float r = avatarImage != null
+                    ? avatarImage.getRoundRadius()[0] * avatarContainer.getScaleX() + CIRCLE_PADDING
+                    : oval.height() * 0.32f;
             if (Math.abs(sweepAngle) == 360) {
                 canvas.drawRoundRect(oval, r, r, paint);
                 return;
@@ -1096,11 +1124,21 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
     }
 
     protected void onTap(StoryViewer.PlaceProvider provider) {
-
+        long did = profileActivity.getDialogId();
+        StoriesController storiesController = profileActivity.getMessagesController().getStoriesController();
+        if (storiesController.hasStories(did) || storiesController.hasUploadingStories(did) || storiesController.isLastUploadingFailed(did)) {
+            profileActivity.getOrCreateStoryViewer().open(getContext(), did, provider);
+        } else if (profileActivity.userInfo != null && profileActivity.userInfo.stories != null && !profileActivity.userInfo.stories.stories.isEmpty() && profileActivity.userId != profileActivity.getUserConfig().clientUserId) {
+            profileActivity.getOrCreateStoryViewer().open(getContext(), profileActivity.userInfo.stories, provider);
+        } else if (profileActivity.chatInfo != null && profileActivity.chatInfo.stories != null && !profileActivity.chatInfo.stories.stories.isEmpty()) {
+            profileActivity.getOrCreateStoryViewer().open(getContext(), profileActivity.chatInfo.stories, provider);
+        } else {
+            profileActivity.expandAvatar();
+        }
     }
 
     protected void onLongPress() {
-
+        profileActivity.openAvatar();
     }
 
     private Runnable onLongPressRunnable = () -> onLongPress();

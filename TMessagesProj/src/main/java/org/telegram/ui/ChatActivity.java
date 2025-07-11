@@ -255,6 +255,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Delegates.ChatActivityMemberRequestsDelegate;
 import org.telegram.ui.Gifts.GiftSheet;
+import org.telegram.ui.Components.ShowDrawable;
 import org.telegram.ui.Stars.StarReactionsOverlay;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -13918,17 +13919,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 @Override
                 public void startPhotoSelectActivity() {
                     try {
-                        Intent videoPickerIntent = new Intent();
-                        videoPickerIntent.setType("video/*");
-                        videoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
-                        videoPickerIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, FileLoader.DEFAULT_MAX_FILE_SIZE);
-
-                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                        photoPickerIntent.setType("image/*");
-                        Intent chooserIntent = Intent.createChooser(photoPickerIntent, null);
-                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{videoPickerIntent});
-
-                        startActivityForResult(chooserIntent, 1);
+                        Intent pickMedia = new Intent(Intent.ACTION_GET_CONTENT);
+                        pickMedia.addCategory(Intent.CATEGORY_OPENABLE);
+                        pickMedia.setType("*/*");
+                        pickMedia.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+                        pickMedia.putExtra(MediaStore.EXTRA_SIZE_LIMIT, FileLoader.DEFAULT_MAX_FILE_SIZE);
+                        startActivityForResult(pickMedia, 1);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -32253,7 +32249,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (toIndex > 0) {
                 string = string.substring(0, toIndex) + string.substring(toIndex + 2);
                 ssb = new SpannableStringBuilder(string);
-                ProfileActivity.ShowDrawable drawable = new ProfileActivity.ShowDrawable(string.substring(fromIndex, toIndex));
+                ShowDrawable drawable = new ShowDrawable(string.substring(fromIndex, toIndex));
                 drawable.setTextColor(Color.WHITE);
                 drawable.setBackgroundColor(0x1e000000);
                 drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());

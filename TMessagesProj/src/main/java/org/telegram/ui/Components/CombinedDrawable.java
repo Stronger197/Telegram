@@ -104,7 +104,9 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
 
     @Override
     public void setColorFilter(ColorFilter colorFilter) {
-        icon.setColorFilter(colorFilter);
+        if (icon != null) {
+            icon.setColorFilter(colorFilter);
+        }
         if (both) {
             background.setColorFilter(colorFilter);
         }

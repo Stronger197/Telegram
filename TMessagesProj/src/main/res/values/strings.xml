@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Str TG</string>
+    <string name="AppNameBeta">Str TG Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -9483,4 +9483,22 @@
     <string name="MessageTodoList">Checklist</string>
     <string name="TodoCheck">Check</string>
     <string name="TodoUncheck">Uncheck</string>
+    <string name="ProfileMessage">Message</string>
+    <string name="ProfileMute">Mute</string>
+    <string name="ProfileUnmute">Unmute</string>
+    <string name="ProfileShare">Share</string>
+    <string name="ProfileCall">Call</string>
+    <string name="ProfileVideo">Video</string>
+    <string name="ProfileJoin">Join</string>
+    <string name="ProfileLeave">Leave</string>
+    <string name="ProfileDiscuss">Discuss</string>
+    <string name="ProfileGift">Gift</string>
+    <string name="ProfileVoiceChat">Voice Chat</string>
+    <string name="ProfileLiveStream">Live Stream</string>
+    <string name="ProfileReport">Report</string>
+    <string name="ProfileStop">Stop</string>
+    <string name="ProfileQRCode">QR Code</string>
+    <string name="ProfileSetPhoto">Set Photo</string>
+    <string name="ProfileAppearance">Appearance</string>
+    <string name="ProfileAddStory">Add Story</string>
 </resources>

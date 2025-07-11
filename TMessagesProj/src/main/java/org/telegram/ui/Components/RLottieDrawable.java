@@ -14,10 +14,14 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
@@ -25,6 +29,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.util.JsonReader;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
@@ -149,6 +154,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
     private Runnable onAnimationEndListener;
     private Runnable onFrameReadyRunnable;
+    private AnimationFrameUpdateListener frameUpdateListener;
 
     private View masterParent;
     NativePtrArgs args;
@@ -170,6 +176,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         public void run() {
             singleFrameDecoded = true;
             invalidateInternal();
+            if (frameUpdateListener != null) {
+                frameUpdateListener.onAnimationFrameUpdated();
+            }
             decodeFrameFinishedInternal();
             if (onFrameReadyRunnable != null) {
                 onFrameReadyRunnable.run();
@@ -843,6 +852,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     public void recycle(boolean uiThread) {
         isRunning = false;
         isRecycled = true;
+        frameUpdateListener = null;
         checkRunningTasks();
         if (loadingInBackground || secondLoadingInBackground) {
             destroyAfterLoading = true;
@@ -1320,6 +1330,14 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
     public void setOnFrameReadyRunnable(Runnable onFrameReadyRunnable) {
         this.onFrameReadyRunnable = onFrameReadyRunnable;
+    }
+
+    public void setFrameUpdateListener(AnimationFrameUpdateListener listener) {
+        this.frameUpdateListener = listener;
+    }
+
+    public void clearFrameUpdateListener() {
+        this.frameUpdateListener = null;
     }
 
     public boolean isLastFrame() {
